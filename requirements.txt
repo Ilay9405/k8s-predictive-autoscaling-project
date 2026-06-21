@@ -1,0 +1,18 @@
+# Core ML
+lightgbm>=4.0.0
+numpy>=1.24.0
+pandas>=2.0.0
+scikit-learn>=1.3.0
+
+# Inference server
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+requests>=2.31.0
+prometheus-client>=0.17.0
+
+# Visualization (optional — for plot generation)
+matplotlib>=3.7.0
+
+# Testing
+pytest>=7.4.0
+httpx>=0.24.0

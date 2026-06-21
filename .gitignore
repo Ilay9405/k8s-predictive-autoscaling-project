@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+*.so
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Model artifacts (large files — don't commit)
+*.h5
+*.pkl
+*.joblib
+models/*.txt
+models/*.json
+
+# Data files
+*.csv
+*.csv.gz
+*.zip
+
+# Logs
+*.log
+
+# Plots (generated at runtime)
+graphs/
+*.png
+
+# Node / Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Docker
+.dockerignore
+
+# Environment
+.env
+.env.local
