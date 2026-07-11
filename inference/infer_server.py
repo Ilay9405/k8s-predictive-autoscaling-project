@@ -17,6 +17,17 @@ import uvicorn
 from inference.prometheus import PrometheusClient
 from inference.predictor import PodPredictor
 from inference.scaler import calculate_recommended_replicas
+from kubernetes import client, config
+from kubernetes.client.rest import ApiException
+
+# Attempt to load Kubernetes config (works both locally and inside the cluster)
+try:
+    config.load_incluster_config()
+except:
+    try:
+        config.load_kube_config()
+    except:
+        pass
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("predscale.server")
@@ -42,6 +53,50 @@ app.mount("/metrics", make_asgi_app())
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
+def ensure_keda_scaledobject_exists(deployment_name, namespace):
+    try:
+        api = client.CustomObjectsApi()
+        scaler_name = f"{deployment_name}-ml-scaler"
+        
+        keda_manifest = {
+            "apiVersion": "keda.sh/v1alpha1",
+            "kind": "ScaledObject",
+            "metadata": {
+                "name": scaler_name,
+                "namespace": namespace
+            },
+            "spec": {
+                "scaleTargetRef": {"name": deployment_name},
+                "minReplicaCount": 1,
+                "maxReplicaCount": 10,
+                "triggers": [
+                    {
+                        "type": "prometheus",
+                        "metadata": {
+                            "serverAddress": "http://ml-inference-service.default.svc.cluster.local:8000",
+                            "query": f"ml_recommended_replicas{{deployment=\"{deployment_name}\"}}",
+                            "threshold": "1"
+                        }
+                    }
+                ]
+            }
+        }
+        
+        # Check if the KEDA scaler already exists for this deployment
+        try:
+            api.get_namespaced_custom_object(
+                group="keda.sh", version="v1alpha1", namespace=namespace, plural="scaledobjects", name=scaler_name
+            )
+        except ApiException as e:
+            if e.status == 404:
+                # It doesn't exist! Inject it dynamically!
+                api.create_namespaced_custom_object(
+                    group="keda.sh", version="v1alpha1", namespace=namespace, plural="scaledobjects", body=keda_manifest
+                )
+                logger.info(f"[*] GOD MODE: Automatically injected KEDA ScaledObject for '{deployment_name}'")
+    except Exception as e:
+        logger.error(f"[!] Operator error: Could not verify KEDA object for {deployment_name}: {e}")
+
 def prediction_loop():
     prom_client = PrometheusClient(PROMETHEUS_URL, NAMESPACE)
     predictor = PodPredictor(lookback_steps=120, predict_steps=60)
@@ -60,6 +115,9 @@ def prediction_loop():
             for deployment in deployments:
                 if deployment not in state["deployments"]:
                     state["deployments"][deployment] = {"pods": {}}
+                    
+                # --> TRIGGER GOD MODE <--
+                ensure_keda_scaledobject_exists(deployment, NAMESPACE)
                     
                 # Dynamically discover the CPU caliber for this specific deployment
                 cpu_request = prom_client.get_deployment_cpu_request(deployment)

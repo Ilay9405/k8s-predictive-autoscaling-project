@@ -1,0 +1,47 @@
+name: Build and Push Docker Image
+
+# 1. This tells GitHub to trigger the pipeline ONLY when you push to the 'main' branch
+on:
+  push:
+    branches:
+      - main
+
+# 2. We need to give the GitHub server permission to upload packages to your account
+permissions:
+  packages: write
+  contents: read
+
+jobs:
+  build-and-push:
+    # 3. This spins up a fresh Ubuntu Linux server in the cloud for us
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Step A: Download your code onto the cloud server
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step B: Log into the GitHub Container Registry using the automatic built-in token
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Step C: Generate the name and tag for the image
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+
+      # Step D: Actually run 'docker build' using the Dockerfile inside your inference/ folder, then push it!
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./inference
+          file: ./inference/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
