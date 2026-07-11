@@ -40,13 +40,20 @@ spec:
       labels:
         app: ml-inference-server
     spec:
-      serviceAccountName: ml-inference-sa  # We attach the ServiceAccount here!
+      serviceAccountName: ml-inference-sa # This is where the service account is attached to the deployment.
       containers:
         - name: inference-server
           image: ghcr.io/ilay9405/k8s-predictive-autoscaling-project:main
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
           env:
             - name: PROMETHEUS_URL
               value: "http://prometheus-operated.monitoring.svc.cluster.local:9090"
