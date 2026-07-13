@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stressor-app
+  namespace: default
+  labels:
+    app: stressor-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stressor-app
+  template:
+    metadata:
+      labels:
+        app: stressor-app
+    spec:
+      containers:
+        - name: stressor-app
+          image: registry.k8s.io/hpa-example
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: stressor-app-service
+  namespace: default
+  labels:
+    app: stressor-app
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      name: http
+  selector:
+    app: stressor-app

@@ -1,33 +1,41 @@
 apiVersion: v1
+kind: Namespace
+metadata:
+  name: predscalens
+---
+apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: ml-inference-sa
+  namespace: predscalens
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
+kind: ClusterRole
 metadata:
-  name: ml-inference-role
+  name: ml-inference-clusterrole
 rules:
   - apiGroups: ["keda.sh"]
     resources: ["scaledobjects"]
     verbs: ["get", "list", "create", "update", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
+kind: ClusterRoleBinding
 metadata:
-  name: ml-inference-rolebinding
+  name: ml-inference-clusterrolebinding
 subjects:
   - kind: ServiceAccount
     name: ml-inference-sa
+    namespace: predscalens
 roleRef:
-  kind: Role
-  name: ml-inference-role
+  kind: ClusterRole
+  name: ml-inference-clusterrole
   apiGroup: rbac.authorization.k8s.io
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ml-inference-server
+  namespace: predscalens
   labels:
     app: ml-inference-server
 spec:
@@ -40,7 +48,7 @@ spec:
       labels:
         app: ml-inference-server
     spec:
-      serviceAccountName: ml-inference-sa # This is where the service account is attached to the deployment.
+      serviceAccountName: ml-inference-sa
       containers:
         - name: inference-server
           image: ghcr.io/ilay9405/k8s-predictive-autoscaling-project:main
@@ -62,6 +70,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: ml-inference-service
+  namespace: predscalens
   labels:
     app: ml-inference-server
 spec:
