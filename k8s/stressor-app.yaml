@@ -36,10 +36,11 @@ metadata:
   labels:
     app: stressor-app
 spec:
-  type: ClusterIP
+  type: NodePort
   ports:
     - port: 80
       targetPort: 80
+      nodePort: 30080
       protocol: TCP
       name: http
   selector:

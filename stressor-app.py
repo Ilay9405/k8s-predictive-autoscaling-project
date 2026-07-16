@@ -3,7 +3,7 @@ import math
 import requests
 import threading
 
-TARGET_URL = "http://localhost:8080"
+TARGET_URL = "http://localhost:30080"
 BASE_TRAFFIC = 2   # Minimum requests per second
 PEAK_TRAFFIC = 40  # Maximum requests per second at the peak of the spike
 CYCLE_MINUTES = 10 # Traffic spikes every 10 minutes
