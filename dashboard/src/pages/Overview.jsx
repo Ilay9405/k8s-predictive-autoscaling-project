@@ -10,7 +10,7 @@ function Overview() {
         // Poll the Python server every 5 seconds
         const fetchData = async () => {
             try {
-                const response = await fetch('http://localhost:8000/api/status');
+                const response = await fetch('/api/status');
                 const json = await response.json();
                 setData(json);
                 setError(null);

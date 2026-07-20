@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: predscale-dashboard
+  namespace: predscalens
+  labels:
+    app: predscale-dashboard
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: predscale-dashboard
+  template:
+    metadata:
+      labels:
+        app: predscale-dashboard
+    spec:
+      containers:
+        - name: dashboard
+          image: ghcr.io/ilay9405/k8s-predictive-autoscaling-project-dashboard:main
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "100m"
+              memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dashboard-service
+  namespace: predscalens
+  labels:
+    app: predscale-dashboard
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30081
+      protocol: TCP
+      name: http
+  selector:
+    app: predscale-dashboard
