@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Build and Deploy Inference server
 
 # 1. This tells GitHub to trigger the pipeline ONLY when you push to the 'main' branch
 on:

@@ -20,7 +20,7 @@ function App() {
             to="/accuracy"
             className={({ isActive }) => (isActive ? "btn active" : "btn")}
           >
-            Historical Accuracy
+            Predictions vs. Actual Usage
           </NavLink>
         </nav>
 
