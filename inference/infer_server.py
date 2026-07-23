@@ -36,7 +36,7 @@ logger = logging.getLogger("predscale.server")
 PROMETHEUS_URL = os.getenv("PROMETHEUS_URL", "http://localhost:9090")
 NAMESPACE      = os.getenv("TARGET_NAMESPACE", "default")
 POLL_INTERVAL  = int(os.getenv("POLL_INTERVAL", "60"))
-UTILIZATION_TARGET_PCT = float(os.getenv("UTILIZATION_TARGET_PCT", "0.5")) # e.g. 0.5 = 50%
+UTILIZATION_TARGET_PCT = float(os.getenv("UTILIZATION_TARGET_PCT", "0.5")) # 0.5 = 50%
 
 # Prometheus Metrics (Notice we added the 'deployment' label!)
 prom_predicted_cpu = Gauge('ml_predicted_cpu_rate', 'Predicted CPU usage', ['deployment', 'pod', 'step'])
