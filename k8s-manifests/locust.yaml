@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: locust-script
+  namespace: predscalens
+
+  # locust python script setup.
+data:
+  locustfile.py: |
+    import time
+    import math
+    from locust import HttpUser, task, LoadTestShape, constant
+
+    # 1. The Victim (the pod that will experience a surge in traffic)
+    class StressUser(HttpUser):
+        wait_time = constant(1) # Send exactly 1 request per second per user
+
+        @task
+        def hit_endpoint(self):
+            # A 2-second timeout so we don't freeze if the victim app crashes
+            self.client.get("/", timeout=2)
+
+    # 2. The Traffic Controller (The Sine Wave generator)
+    class SineWaveShape(LoadTestShape):
+        BASE_TRAFFIC = 2
+        PEAK_TRAFFIC = 40
+        CYCLE_MINUTES = 10
+
+        def tick(self):
+            run_time = self.get_run_time()
+            cycle_position = (run_time % (self.CYCLE_MINUTES * 60)) / (self.CYCLE_MINUTES * 60)
+            sine_wave = (math.sin(cycle_position * 2 * math.pi - (math.pi / 2)) + 1) / 2
+            
+            # Calculate exactly how many users should be active right now
+            current_rps = int(self.BASE_TRAFFIC + (sine_wave * (self.PEAK_TRAFFIC - self.BASE_TRAFFIC)))
+            
+            # Return a tuple of (Target User Count, Spawn Rate)
+            return (current_rps, current_rps)
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: locust-worker
+  namespace: predscalens
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: locust
+  template:
+    metadata:
+      labels:
+        app: locust
+    spec:
+      containers:
+        - name: locust
+          image: locustio/locust
+          # Run headless (no UI) and target the internal Kubernetes DNS name!
+          command: ["locust"]
+          args:
+            - "-f"
+            - "/mnt/locust/locustfile.py"
+            - "--headless"
+            - "--host"
+            - "http://stressor-app-service.default.svc.cluster.local"
+          volumeMounts:
+            - name: locust-script-vol
+              mountPath: /mnt/locust
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "100m"
+              memory: "256Mi"
+      volumes:
+        - name: locust-script-vol
+          configMap:
+            name: locust-script
