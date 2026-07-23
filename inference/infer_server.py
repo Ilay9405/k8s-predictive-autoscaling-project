@@ -73,7 +73,7 @@ def ensure_keda_scaledobject_exists(deployment_name, namespace):
                     {
                         "type": "prometheus",
                         "metadata": {
-                            "serverAddress": "http://ml-inference-service.predscalens.svc.cluster.local:8000",
+                            "serverAddress": "http://prometheus-operated.monitoring.svc.cluster.local:9090",
                             "query": f"ml_recommended_replicas{{deployment=\"{deployment_name}\"}}",
                             "threshold": "1"
                         }
