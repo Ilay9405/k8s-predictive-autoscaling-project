@@ -1,13 +1,23 @@
 // dashboard/src/components/DeploymentCard.jsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import PodChart from './PodChart';
 
 function DeploymentCard({ name, info }) {
     const pods = Object.entries(info.pods || {});
+    
+    // Default to the first pod in the list
+    const [selectedPodName, setSelectedPodName] = useState('');
 
-    // We look at the first pod's recommendation, since all pods in a deployment
+    useEffect(() => {
+        if (pods.length > 0 && !pods.find(([podName]) => podName === selectedPodName)) {
+            setSelectedPodName(pods[0][0]);
+        }
+    }, [pods, selectedPodName]);
+
+    // We look at the first pod's recommendation for the big numbers, since all pods in a deployment
     // share the same recommendation in our backend architecture.
     const firstPod = pods.length > 0 ? pods[0][1] : null;
+    const selectedPodInfo = info.pods[selectedPodName] || null;
 
     return (
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -41,14 +51,38 @@ function DeploymentCard({ name, info }) {
 
             {/* The Graphs */}
             <div style={{ marginTop: '8px' }}>
-                <h3 style={{ fontSize: '1rem', marginBottom: '12px', color: 'var(--text-secondary)' }}>Pod Predictions</h3>
-                {pods.map(([podName, podInfo]) => (
-                    <PodChart key={podName} podName={podName} podInfo={podInfo} />
-                ))}
-                {pods.length === 0 && <p>No pod data available.</p>}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <h3 style={{ fontSize: '1rem', margin: 0, color: 'var(--text-secondary)' }}>Pod Predictions</h3>
+                    {pods.length > 0 && (
+                        <select 
+                            value={selectedPodName}
+                            onChange={(e) => setSelectedPodName(e.target.value)}
+                            style={{
+                                background: 'rgba(0,0,0,0.3)',
+                                color: 'var(--text-primary)',
+                                border: '1px solid var(--border-color)',
+                                padding: '6px 12px',
+                                borderRadius: '6px',
+                                outline: 'none',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            {pods.map(([podName]) => (
+                                <option key={podName} value={podName}>{podName}</option>
+                            ))}
+                        </select>
+                    )}
+                </div>
+                
+                {selectedPodName && selectedPodInfo ? (
+                    <PodChart podName={selectedPodName} podInfo={selectedPodInfo} />
+                ) : (
+                    <p>No pod data available.</p>
+                )}
             </div>
         </div>
     );
 }
 
 export default DeploymentCard;
+

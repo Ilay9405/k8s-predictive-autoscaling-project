@@ -23,7 +23,7 @@ data:
     # 2. The Traffic Controller (The Sine Wave generator)
     class SineWaveShape(LoadTestShape):
         BASE_TRAFFIC = 2
-        PEAK_TRAFFIC = 40
+        PEAK_TRAFFIC = 20
         CYCLE_MINUTES = 10
 
         def tick(self):
