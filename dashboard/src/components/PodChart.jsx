@@ -45,12 +45,12 @@ function PodChart({ podName, podInfo }) {
                                             padding: '12px',
                                             boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
                                         }}>
-                                            <p style={{ margin: '0 0 8px 0', color: 'var(--text-secondary)' }}>{label}</p>
+                                            <p style={{ margin: '0 0 8px 0', color: 'var(--text-secondary)' }}>Future Prediction: {label}</p>
                                             <p style={{ margin: '0 0 4px 0', color: 'var(--accent-blue)', fontWeight: 'bold' }}>
                                                 Predicted CPU: {payload[0].value}
                                             </p>
                                             <p style={{ margin: '0', color: 'var(--accent-purple)' }}>
-                                                Target Replicas: {podInfo.recommended_replicas}
+                                                Current Deployment Replicas: {podInfo.current_replicas}
                                             </p>
                                         </div>
                                     );

@@ -51,33 +51,42 @@ function DeploymentCard({ name, info }) {
 
             {/* The Graphs */}
             <div style={{ marginTop: '8px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <h3 style={{ fontSize: '1rem', margin: 0, color: 'var(--text-secondary)' }}>Pod Predictions</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
+                    <h3 style={{ fontSize: '1rem', margin: 0, color: 'var(--text-secondary)' }}>AI Pod Predictions</h3>
                     {pods.length > 0 && (
-                        <select 
-                            value={selectedPodName}
-                            onChange={(e) => setSelectedPodName(e.target.value)}
-                            style={{
-                                background: 'rgba(0,0,0,0.3)',
-                                color: 'var(--text-primary)',
-                                border: '1px solid var(--border-color)',
-                                padding: '6px 12px',
-                                borderRadius: '6px',
-                                outline: 'none',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            {pods.map(([podName]) => (
-                                <option key={podName} value={podName}>{podName}</option>
-                            ))}
-                        </select>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                            {pods.map(([podName]) => {
+                                const isSelected = podName === selectedPodName;
+                                return (
+                                    <button
+                                        key={podName}
+                                        onClick={() => setSelectedPodName(podName)}
+                                        style={{
+                                            background: isSelected ? 'var(--accent-blue)' : 'rgba(255,255,255,0.05)',
+                                            color: isSelected ? '#fff' : 'var(--text-secondary)',
+                                            border: `1px solid ${isSelected ? 'var(--accent-blue)' : 'rgba(255,255,255,0.1)'}`,
+                                            padding: '6px 14px',
+                                            borderRadius: '20px',
+                                            cursor: 'pointer',
+                                            fontSize: '0.8rem',
+                                            transition: 'all 0.2s ease',
+                                            boxShadow: isSelected ? '0 0 10px rgba(0, 168, 255, 0.4)' : 'none'
+                                        }}
+                                    >
+                                        {podName.split('-').slice(-2).join('-')} {/* Just show the hash part for cleaner UI */}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     )}
                 </div>
                 
                 {selectedPodName && selectedPodInfo ? (
                     <PodChart podName={selectedPodName} podInfo={selectedPodInfo} />
                 ) : (
-                    <p>No pod data available.</p>
+                    <div style={{ padding: '24px', textAlign: 'center', background: 'rgba(0,0,0,0.2)', borderRadius: '12px' }}>
+                        <p style={{ color: 'var(--text-secondary)' }}>Waiting for pods to collect 46 minutes of historical data...</p>
+                    </div>
                 )}
             </div>
         </div>
