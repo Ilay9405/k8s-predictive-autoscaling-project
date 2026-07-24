@@ -35,12 +35,28 @@ function PodChart({ podName, podInfo }) {
                         />
 
                         <Tooltip
-                            contentStyle={{
-                                backgroundColor: 'var(--bg-secondary)',
-                                borderColor: 'var(--border-color)',
-                                borderRadius: '8px'
+                            content={({ active, payload, label }) => {
+                                if (active && payload && payload.length) {
+                                    return (
+                                        <div style={{
+                                            backgroundColor: 'var(--bg-secondary)',
+                                            border: '1px solid var(--border-color)',
+                                            borderRadius: '8px',
+                                            padding: '12px',
+                                            boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
+                                        }}>
+                                            <p style={{ margin: '0 0 8px 0', color: 'var(--text-secondary)' }}>{label}</p>
+                                            <p style={{ margin: '0 0 4px 0', color: 'var(--accent-blue)', fontWeight: 'bold' }}>
+                                                Predicted CPU: {payload[0].value}
+                                            </p>
+                                            <p style={{ margin: '0', color: 'var(--accent-purple)' }}>
+                                                Target Replicas: {podInfo.recommended_replicas}
+                                            </p>
+                                        </div>
+                                    );
+                                }
+                                return null;
                             }}
-                            itemStyle={{ color: 'var(--text-primary)' }}
                         />
 
                         {/* The dotted threshold line showing our exact scaling trigger! */}
