@@ -51,7 +51,7 @@ spec:
       serviceAccountName: ml-inference-sa
       containers:
         - name: inference-server
-          image: ghcr.io/ilay9405/k8s-predictive-autoscaling-project:main
+          image: ghcr.io/ilay9405/k8s-predictive-autoscaling-project-inference:main
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
@@ -82,3 +82,22 @@ spec:
       name: http
   selector:
     app: ml-inference-server
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ml-inference-monitor
+  namespace: monitoring
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: ml-inference-server
+  namespaceSelector:
+    matchNames:
+      - predscalens
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
