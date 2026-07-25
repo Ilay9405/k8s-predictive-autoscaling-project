@@ -20,22 +20,25 @@ data:
             # A 2-second timeout so we don't freeze if the victim app crashes
             self.client.get("/", timeout=2)
 
-    # 2. The Traffic Controller (The Sine Wave generator)
-    class SineWaveShape(LoadTestShape):
-        BASE_TRAFFIC = 2
-        PEAK_TRAFFIC = 20
-        CYCLE_MINUTES = 10
-
+     # 2. The Traffic Controller (Flash Sale pattern)
+    class FlashSaleShape(LoadTestShape):
         def tick(self):
             run_time = self.get_run_time()
-            cycle_position = (run_time % (self.CYCLE_MINUTES * 60)) / (self.CYCLE_MINUTES * 60)
-            sine_wave = (math.sin(cycle_position * 2 * math.pi - (math.pi / 2)) + 1) / 2
             
-            # Calculate exactly how many users should be active right now
-            current_rps = int(self.BASE_TRAFFIC + (sine_wave * (self.PEAK_TRAFFIC - self.BASE_TRAFFIC)))
+            # A 20 minute cycle (1200 seconds)
+            # - First 15 minutes: Dead quiet (2 RPS)
+            # - Next 2 minutes: Sudden ramp up to 25 RPS
+            # - Last 3 minutes: Peak traffic holds at 25 RPS
             
-            # Return a tuple of (Target User Count, Spawn Rate)
-            return (current_rps, current_rps)
+            cycle_time = run_time % 1200
+            
+            if cycle_time < 900:  # The 15 minute quiet period
+                return (2, 2)
+            elif cycle_time < 1020:  # The 2 minute ramp up
+                ramp_rps = int(2 + ((cycle_time - 900) / 120) * 23)
+                return (ramp_rps, ramp_rps)
+            else:  # The 3 minute peak sale
+                return (25, 25)
 
 ---
 apiVersion: apps/v1

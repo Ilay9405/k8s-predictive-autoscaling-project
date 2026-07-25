@@ -15,7 +15,7 @@ def calculate_recommended_replicas(
     current_replicas: int, 
     target_cpu_utilization: float = 0.5,
     min_replicas: int = 1,
-    max_replicas: int = 10
+    max_replicas: int = 30
 ) -> int:
     """
     Calculate how many replicas are needed based on the predicted CPU usage.

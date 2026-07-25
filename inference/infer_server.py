@@ -68,7 +68,7 @@ def ensure_keda_scaledobject_exists(deployment_name, namespace):
             "spec": {
                 "scaleTargetRef": {"name": deployment_name},
                 "minReplicaCount": 1,
-                "maxReplicaCount": 10,
+                "maxReplicaCount": 30,
                 "triggers": [
                     {
                         "type": "prometheus",
