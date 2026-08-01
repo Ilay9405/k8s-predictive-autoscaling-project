@@ -114,7 +114,7 @@ def prediction_loop():
             # Loop over every deployment in the cluster
             for deployment in deployments:
                 if deployment not in state["deployments"]:
-                    state["deployments"][deployment] = {"pods": {}}
+                    state["deployments"][deployment] = {}
                     
                 # --> TRIGGER GOD MODE <--
                 ensure_keda_scaledobject_exists(deployment, NAMESPACE)
@@ -124,13 +124,33 @@ def prediction_loop():
                 target_cores = cpu_request * UTILIZATION_TARGET_PCT
                 current_replicas = prom_client.get_replica_count(deployment)
 
-                                # Instead of discovering ephemeral pods, fetch the aggregate deployment CPU!
+                # Fetch the aggregate deployment CPU (immune to ephemeral pod churn)
                 df = prom_client.fetch_deployment_cpu_series(deployment)
+                
+                # Build historical CPU array for the frontend graph
+                history = []
+                if not df.empty:
+                    for _, row in df.iterrows():
+                        history.append({
+                            "time": row["timestamp"].isoformat(),
+                            "cpu": round(float(row["cpu"]), 4)
+                        })
+
                 if df.empty or len(df) < 185:
+                    # Not enough data yet — still send what we have so the UI can show progress
+                    state["deployments"][deployment] = {
+                        "cpu_request": cpu_request,
+                        "target_cores": target_cores,
+                        "current_cpu": float(df["cpu"].iloc[-1]) if not df.empty else 0,
+                        "current_replicas": current_replicas,
+                        "recommended_replicas": current_replicas,
+                        "data_points": len(df),
+                        "required_points": 185,
+                        "history": history[-200:],  # Last 200 points (~50 min at 15s intervals)
+                        "predictions": [],
+                    }
                     continue
                 
-                # We use a static string so the React Dashboard renders exactly one beautiful "pod" pill
-                pod = f"{deployment}-aggregate-load"
                 current_cpu = df["cpu"].iloc[-1]
                 
                 if predictor.train(df):
@@ -140,23 +160,32 @@ def prediction_loop():
                             predictions[0], current_replicas, target_cpu_utilization=target_cores
                         )
                         
-                        prom_recommended_replicas.labels(deployment=deployment, pod=pod).set(recommended)
+                        # Use a stable label for Prometheus metrics
+                        prom_label = f"{deployment}-aggregate"
+                        prom_recommended_replicas.labels(deployment=deployment, pod=prom_label).set(recommended)
                         for i, p_val in enumerate(predictions):
-                            prom_predicted_cpu.labels(deployment=deployment, pod=pod, step=str(i + 1)).set(float(p_val))
+                            prom_predicted_cpu.labels(deployment=deployment, pod=prom_label, step=str(i + 1)).set(float(p_val))
                         
                         last_ts = df['timestamp'].iloc[-1]
-                        future_times = [(last_ts + timedelta(seconds=(i+1)*15)).isoformat() for i in range(len(predictions))]
+                        future_predictions = []
+                        for i, p_val in enumerate(predictions):
+                            future_predictions.append({
+                                "time": (last_ts + timedelta(seconds=(i+1)*15)).isoformat(),
+                                "cpu": round(float(p_val), 4)
+                            })
                         
-                        state["deployments"][deployment]["pods"][pod] = {
+                        state["deployments"][deployment] = {
                             "cpu_request": cpu_request,
                             "target_cores": target_cores,
-                            "current_cpu": current_cpu,
+                            "current_cpu": round(float(current_cpu), 4),
                             "current_replicas": current_replicas,
                             "recommended_replicas": recommended,
-                            "predictions": [{"time": t, "cpu": p} for t, p in zip(future_times, predictions)],
+                            "data_points": len(df),
+                            "required_points": 185,
+                            "history": history[-200:],
+                            "predictions": future_predictions,
                         }
-
-                            
+                             
             state["last_update"] = datetime.now(timezone.utc).isoformat()
             
         except Exception as e:

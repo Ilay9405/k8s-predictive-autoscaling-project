@@ -1,97 +1,76 @@
 // dashboard/src/components/DeploymentCard.jsx
-import React, { useState, useEffect } from 'react';
-import PodChart from './PodChart';
+import React from 'react';
+import DeploymentChart from './DeploymentChart';
 
 function DeploymentCard({ name, info }) {
-    const pods = Object.entries(info.pods || {});
-    
-    // Default to the first pod in the list
-    const [selectedPodName, setSelectedPodName] = useState('');
-
-    useEffect(() => {
-        if (pods.length > 0 && !pods.find(([podName]) => podName === selectedPodName)) {
-            setSelectedPodName(pods[0][0]);
-        }
-    }, [pods, selectedPodName]);
-
-    // We look at the first pod's recommendation for the big numbers, since all pods in a deployment
-    // share the same recommendation in our backend architecture.
-    const firstPod = pods.length > 0 ? pods[0][1] : null;
-    const selectedPodInfo = info.pods[selectedPodName] || null;
+    const isCollecting = !info.predictions || info.predictions.length === 0;
+    const progress = info.data_points && info.required_points
+        ? Math.min(100, Math.round((info.data_points / info.required_points) * 100))
+        : 0;
 
     return (
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div className="card deployment-card">
 
             {/* Header: Deployment Name and Target CPU */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h2 style={{ color: 'var(--accent-blue)', margin: 0 }}>{name}</h2>
-                <span style={{
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    padding: '4px 12px',
-                    borderRadius: '99px',
-                    fontSize: '0.875rem'
-                }}>
-                    Target CPU: {firstPod ? firstPod.target_cores.toFixed(2) : '0.00'} cores
+            <div className="deployment-header">
+                <h2 className="deployment-name">{name}</h2>
+                <span className="target-badge">
+                    Target CPU: {info.target_cores ? info.target_cores.toFixed(2) : '0.00'} cores
                 </span>
             </div>
 
             {/* The Big Numbers: Current vs Recommended */}
-            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                <div style={{ flex: 1, background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '12px' }}>
-                    <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Current Replicas</div>
-                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{firstPod?.current_replicas || 0}</div>
+            <div className="stats-row">
+                <div className="stat-box">
+                    <div className="stat-label">Current Replicas</div>
+                    <div className="stat-value">{info.current_replicas || 0}</div>
                 </div>
-                <div style={{ flex: 1, background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '12px' }}>
-                    <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>AI Recommended</div>
-                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--accent-purple)' }}>
-                        {firstPod?.recommended_replicas || 0}
+                <div className="stat-box">
+                    <div className="stat-label">AI Recommended</div>
+                    <div className="stat-value accent">
+                        {info.recommended_replicas || 0}
                     </div>
+                </div>
+                <div className="stat-box">
+                    <div className="stat-label">Live CPU</div>
+                    <div className="stat-value small">{info.current_cpu ? info.current_cpu.toFixed(3) : '0.000'} cores</div>
                 </div>
             </div>
 
-            {/* The Graphs */}
-            <div style={{ marginTop: '8px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
-                    <h3 style={{ fontSize: '1rem', margin: 0, color: 'var(--text-secondary)' }}>AI Pod Predictions</h3>
-                    {pods.length > 0 && (
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                            {pods.map(([podName]) => {
-                                const isSelected = podName === selectedPodName;
-                                return (
-                                    <button
-                                        key={podName}
-                                        onClick={() => setSelectedPodName(podName)}
-                                        style={{
-                                            background: isSelected ? 'var(--accent-blue)' : 'rgba(255,255,255,0.05)',
-                                            color: isSelected ? '#fff' : 'var(--text-secondary)',
-                                            border: `1px solid ${isSelected ? 'var(--accent-blue)' : 'rgba(255,255,255,0.1)'}`,
-                                            padding: '6px 14px',
-                                            borderRadius: '20px',
-                                            cursor: 'pointer',
-                                            fontSize: '0.8rem',
-                                            transition: 'all 0.2s ease',
-                                            boxShadow: isSelected ? '0 0 10px rgba(0, 168, 255, 0.4)' : 'none'
-                                        }}
-                                    >
-                                        {podName.split('-').slice(-2).join('-')} {/* Just show the hash part for cleaner UI */}
-                                    </button>
-                                );
-                            })}
-                        </div>
+            {/* Data Collection Progress or Chart */}
+            {isCollecting ? (
+                <div className="collecting-box">
+                    <div className="collecting-header">
+                        <span className="collecting-dot"></span>
+                        <span>Collecting historical data...</span>
+                    </div>
+                    <div className="progress-bar-container">
+                        <div className="progress-bar" style={{ width: `${progress}%` }}></div>
+                    </div>
+                    <p className="collecting-detail">
+                        {info.data_points || 0} / {info.required_points || 185} data points ({progress}%)
+                    </p>
+                    {/* Still show the history graph even while collecting */}
+                    {info.history && info.history.length > 5 && (
+                        <DeploymentChart
+                            history={info.history}
+                            predictions={[]}
+                            targetCores={info.target_cores}
+                            currentReplicas={info.current_replicas}
+                        />
                     )}
                 </div>
-                
-                {selectedPodName && selectedPodInfo ? (
-                    <PodChart podName={selectedPodName} podInfo={selectedPodInfo} />
-                ) : (
-                    <div style={{ padding: '24px', textAlign: 'center', background: 'rgba(0,0,0,0.2)', borderRadius: '12px' }}>
-                        <p style={{ color: 'var(--text-secondary)' }}>Waiting for pods to collect 46 minutes of historical data...</p>
-                    </div>
-                )}
-            </div>
+            ) : (
+                <DeploymentChart
+                    history={info.history}
+                    predictions={info.predictions}
+                    targetCores={info.target_cores}
+                    currentReplicas={info.current_replicas}
+                    recommendedReplicas={info.recommended_replicas}
+                />
+            )}
         </div>
     );
 }
 
 export default DeploymentCard;
-

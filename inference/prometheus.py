@@ -125,9 +125,6 @@ class PrometheusClient:
             logger.error(f"Failed to fetch replica count for {deployment}: {e}")
         return 1
 
-
-#new function to aggregate CPU usage across all pods of a deployment, for the LightGBM model (and possibly the LSTM model in the future)
-
     def fetch_deployment_cpu_series(self, deployment: str, step_seconds: int = 15, minutes: int = 50) -> pd.DataFrame:
         """Fetch total aggregate CPU usage time series for an entire deployment."""
         query = (

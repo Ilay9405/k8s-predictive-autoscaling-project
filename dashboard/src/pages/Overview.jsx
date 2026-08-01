@@ -42,7 +42,7 @@ function Overview() {
         <div>
             <h1 style={{ textAlign: 'center', marginBottom: '10px' }}>Live ML Predictions</h1>
             <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
-                Last Updated: {new Date(data.last_update).toLocaleTimeString()}
+                Last Updated: {data.last_update ? new Date(data.last_update).toLocaleTimeString() : 'N/A'}
             </p>
 
             <div className="dashboard-grid">

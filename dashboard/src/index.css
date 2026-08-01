@@ -11,6 +11,7 @@
 
   --accent-blue: #38bdf8;
   --accent-purple: #c084fc;
+  --accent-green: #34d399;
   --accent-glow: rgba(56, 189, 248, 0.3);
 
   --border-color: rgba(255, 255, 255, 0.1);
@@ -28,12 +29,11 @@ body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   min-height: 100vh;
-  /* Subtle dark gradient background */
   background: radial-gradient(circle at top right, #1e1b4b 0%, #0f172a 100%);
   background-attachment: fixed;
 }
 
-/* Glassmorphism Card */
+/* ── Glassmorphism Card ──────────────────────────────────── */
 .card {
   background: var(--bg-glass);
   backdrop-filter: blur(12px);
@@ -50,14 +50,13 @@ body {
   border-color: var(--border-highlight);
 }
 
-/* Pill-shaped Navigation Buttons */
+/* ── Pill-shaped Navigation ──────────────────────────────── */
 .btn {
   background: linear-gradient(135deg, var(--bg-secondary), var(--bg-primary));
   color: var(--text-primary);
   border: 1px solid var(--border-color);
   padding: 10px 24px;
   border-radius: 9999px;
-  /* Perfect pill shape */
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -76,7 +75,7 @@ body {
   transform: scale(1.02);
 }
 
-/* Layout Utilities */
+/* ── Layout Utilities ────────────────────────────────────── */
 .nav-container {
   display: flex;
   gap: 16px;
@@ -93,7 +92,250 @@ body {
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  grid-template-columns: 1fr;
   gap: 24px;
   margin-top: 32px;
+}
+
+/* ── Deployment Card ─────────────────────────────────────── */
+.deployment-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.deployment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.deployment-name {
+  color: var(--accent-blue);
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.target-badge {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 6px 16px;
+  border-radius: 99px;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+/* ── Stats Row ───────────────────────────────────────────── */
+.stats-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.stat-box {
+  flex: 1;
+  min-width: 120px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  transition: border-color 0.3s ease;
+}
+
+.stat-box:hover {
+  border-color: var(--border-highlight);
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.stat-value.accent {
+  color: var(--accent-purple);
+}
+
+.stat-value.small {
+  font-size: 1.25rem;
+  color: var(--accent-green);
+}
+
+/* ── Data Collection Progress ────────────────────────────── */
+.collecting-box {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.collecting-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+}
+
+.collecting-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent-blue);
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+  border-radius: 99px;
+  transition: width 0.5s ease;
+}
+
+.collecting-detail {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* ── Chart Section ───────────────────────────────────────── */
+.chart-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.chart-container {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid var(--border-color);
+}
+
+.chart-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chart-icon {
+  font-size: 1.1rem;
+}
+
+.prediction-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--accent-purple);
+  background: rgba(192, 132, 252, 0.15);
+  padding: 3px 10px;
+  border-radius: 99px;
+  border: 1px solid rgba(192, 132, 252, 0.3);
+  margin-left: 4px;
+}
+
+/* ── Chart Legend ────────────────────────────────────────── */
+.chart-legend {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.legend-line {
+  width: 20px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.legend-line.blue {
+  background: var(--accent-blue);
+}
+
+.legend-line.purple {
+  background: var(--accent-purple);
+}
+
+.legend-line.dashed {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--accent-purple) 0px,
+    var(--accent-purple) 6px,
+    transparent 6px,
+    transparent 10px
+  );
+}
+
+.legend-line.dotted {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--accent-purple) 0px,
+    var(--accent-purple) 3px,
+    transparent 3px,
+    transparent 6px
+  );
+}
+
+/* ── Custom Tooltip ──────────────────────────────────────── */
+.custom-tooltip {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.tooltip-time {
+  margin: 0 0 8px 0;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.tooltip-row {
+  margin: 4px 0;
+  font-size: 0.85rem;
+}
+
+.tooltip-row.blue {
+  color: var(--accent-blue);
+}
+
+.tooltip-row.purple {
+  color: var(--accent-purple);
+}
+
+.tooltip-row.dim {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
 }
