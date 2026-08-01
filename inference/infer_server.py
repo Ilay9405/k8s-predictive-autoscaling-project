@@ -124,37 +124,38 @@ def prediction_loop():
                 target_cores = cpu_request * UTILIZATION_TARGET_PCT
                 current_replicas = prom_client.get_replica_count(deployment)
 
-                pods = prom_client.discover_pods(deployment)
-                for pod in pods:
-                    df = prom_client.fetch_cpu_series(pod)
-                    if df.empty or len(df) < 185:
-                        continue
-                    
-                    current_cpu = df["cpu"].iloc[-1]
-                    
-                    if predictor.train(df):
-                        predictions = predictor.predict(df)
-                        if predictions is not None:
-                            # Use the dynamically calculated target_cores for the math!
-                            recommended = calculate_recommended_replicas(
-                                predictions[0], current_replicas, target_cpu_utilization=target_cores
-                            )
-                            
-                            prom_recommended_replicas.labels(deployment=deployment, pod=pod).set(recommended)
-                            for i, p_val in enumerate(predictions):
-                                prom_predicted_cpu.labels(deployment=deployment, pod=pod, step=str(i + 1)).set(float(p_val))
-                            
-                            last_ts = df['timestamp'].iloc[-1]
-                            future_times = [(last_ts + timedelta(seconds=(i+1)*15)).isoformat() for i in range(len(predictions))]
-                            
-                            state["deployments"][deployment]["pods"][pod] = {
-                                "cpu_request": cpu_request,
-                                "target_cores": target_cores,
-                                "current_cpu": current_cpu,
-                                "current_replicas": current_replicas,
-                                "recommended_replicas": recommended,
-                                "predictions": [{"time": t, "cpu": p} for t, p in zip(future_times, predictions)],
-                            }
+                                # Instead of discovering ephemeral pods, fetch the aggregate deployment CPU!
+                df = prom_client.fetch_deployment_cpu_series(deployment)
+                if df.empty or len(df) < 185:
+                    continue
+                
+                # We use a static string so the React Dashboard renders exactly one beautiful "pod" pill
+                pod = f"{deployment}-aggregate-load"
+                current_cpu = df["cpu"].iloc[-1]
+                
+                if predictor.train(df):
+                    predictions = predictor.predict(df)
+                    if predictions is not None:
+                        recommended = calculate_recommended_replicas(
+                            predictions[0], current_replicas, target_cpu_utilization=target_cores
+                        )
+                        
+                        prom_recommended_replicas.labels(deployment=deployment, pod=pod).set(recommended)
+                        for i, p_val in enumerate(predictions):
+                            prom_predicted_cpu.labels(deployment=deployment, pod=pod, step=str(i + 1)).set(float(p_val))
+                        
+                        last_ts = df['timestamp'].iloc[-1]
+                        future_times = [(last_ts + timedelta(seconds=(i+1)*15)).isoformat() for i in range(len(predictions))]
+                        
+                        state["deployments"][deployment]["pods"][pod] = {
+                            "cpu_request": cpu_request,
+                            "target_cores": target_cores,
+                            "current_cpu": current_cpu,
+                            "current_replicas": current_replicas,
+                            "recommended_replicas": recommended,
+                            "predictions": [{"time": t, "cpu": p} for t, p in zip(future_times, predictions)],
+                        }
+
                             
             state["last_update"] = datetime.now(timezone.utc).isoformat()
             

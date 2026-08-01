@@ -33,10 +33,10 @@ def calculate_recommended_replicas(
     if predicted_cpu <= 0 or current_replicas <= 0:
         return min_replicas
 
-    # The formula: (Predicted CPU * Current Replicas) / Target CPU
-    # E.g. If predicted is 0.8, current is 2, target is 0.5:
-    # (0.8 * 2) / 0.5 = 1.6 / 0.5 = 3.2 -> ceil to 4 replicas
-    raw_recommendation = math.ceil((predicted_cpu * current_replicas) / target_cpu_utilization)
+    # The formula: (Predicted Total CPU) / Target CPU per pod
+    # E.g. If predicted total is 1.5 cores, and target is 0.05 per pod:
+    # 1.5 / 0.05 = 30 replicas
+    raw_recommendation = math.ceil(predicted_cpu / target_cpu_utilization)
     
     # Clamp to our allowed min/max boundaries
     recommended = max(min_replicas, min(max_replicas, raw_recommendation))

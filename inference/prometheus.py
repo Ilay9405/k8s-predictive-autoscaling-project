@@ -1,7 +1,6 @@
 """
 prometheus.py — Prometheus query helpers.
-Upgraded to Cluster-Wide God Mode!
-"""
+Provides """
 
 import time
 import logging
@@ -125,3 +124,36 @@ class PrometheusClient:
         except Exception as e:
             logger.error(f"Failed to fetch replica count for {deployment}: {e}")
         return 1
+
+
+#new function to aggregate CPU usage across all pods of a deployment, for the LightGBM model (and possibly the LSTM model in the future)
+
+    def fetch_deployment_cpu_series(self, deployment: str, step_seconds: int = 15, minutes: int = 50) -> pd.DataFrame:
+        """Fetch total aggregate CPU usage time series for an entire deployment."""
+        query = (
+            f'sum(rate(container_cpu_usage_seconds_total'
+            f'{{namespace="{self.namespace}", pod=~"{deployment}-.*"}}[30s]))'
+        )
+        end = int(time.time())
+        start = end - minutes * 60
+        params = {"query": query, "start": start, "end": end, "step": str(step_seconds)}
+
+        try:
+            resp = requests.get(
+                f"{self.url}/api/v1/query_range", params=params, timeout=self.timeout
+            )
+            resp.raise_for_status()
+            data = resp.json()
+
+            if data.get("status") != "success" or not data.get("data", {}).get("result"):
+                return pd.DataFrame(columns=["timestamp", "cpu"])
+
+            values = data["data"]["result"][0]["values"]
+            df = pd.DataFrame(values, columns=["ts", "cpu"])
+            df["timestamp"] = pd.to_datetime(df["ts"].astype(float), unit="s")
+            df["cpu"] = df["cpu"].astype(float)
+            return df.drop(columns=["ts"]).sort_values("timestamp").reset_index(drop=True)
+
+        except Exception as e:
+            logger.error(f"Failed to fetch deployment CPU for {deployment}: {e}")
+            return pd.DataFrame(columns=["timestamp", "cpu"])
