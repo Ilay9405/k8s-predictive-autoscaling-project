@@ -43,7 +43,7 @@ function DeploymentChart({ history, predictions, targetCores, currentReplicas, r
                 </h3>
                 <div style={{ height: '260px', width: '100%' }}>
                     <ResponsiveContainer width="100%" height="100%">
-                        <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: -10, bottom: 5 }}>
+                        <ComposedChart data={chartData} margin={{ top: 10, right: 60, left: -10, bottom: 5 }}>
                             <defs>
                                 <linearGradient id="cpuGradient" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="5%" stopColor="var(--accent-blue)" stopOpacity={0.3} />
@@ -73,17 +73,17 @@ function DeploymentChart({ history, predictions, targetCores, currentReplicas, r
                                 tickFormatter={(v) => v.toFixed(2)}
                             />
 
-                            <Tooltip content={<CpuTooltip targetCores={targetCores} />} />
+                            <Tooltip content={<CpuTooltip targetCores={targetCores} currentReplicas={currentReplicas} />} />
 
-                            {/* Threshold reference line */}
+                            {/* Threshold reference line (Dynamic Capacity) */}
                             <ReferenceLine
-                                y={targetCores}
+                                y={targetCores * currentReplicas}
                                 stroke="var(--accent-purple)"
                                 strokeDasharray="6 4"
                                 strokeWidth={1.5}
                                 label={{
                                     position: 'right',
-                                    value: `Threshold: ${targetCores?.toFixed(3)}`,
+                                    value: `Capacity Limit: ${(targetCores * currentReplicas).toFixed(2)}`,
                                     fill: 'var(--accent-purple)',
                                     fontSize: 11
                                 }}
@@ -129,7 +129,7 @@ function DeploymentChart({ history, predictions, targetCores, currentReplicas, r
                     </div>
                     <div className="legend-item">
                         <span className="legend-line purple dotted"></span>
-                        Scaling Threshold
+                        Capacity Limit
                     </div>
                 </div>
             </div>
@@ -138,11 +138,12 @@ function DeploymentChart({ history, predictions, targetCores, currentReplicas, r
 }
 
 // Custom tooltip for the CPU graph
-function CpuTooltip({ active, payload, label, targetCores }) {
+function CpuTooltip({ active, payload, label, targetCores, currentReplicas }) {
     if (!active || !payload || !payload.length) return null;
 
     const actualVal = payload.find(p => p.dataKey === 'actual');
     const predictedVal = payload.find(p => p.dataKey === 'predicted');
+    const capacityLimit = targetCores && currentReplicas ? targetCores * currentReplicas : null;
 
     return (
         <div className="custom-tooltip">
@@ -157,9 +158,9 @@ function CpuTooltip({ active, payload, label, targetCores }) {
                     Predicted CPU: <strong>{predictedVal.value.toFixed(4)} cores</strong>
                 </p>
             )}
-            {targetCores && (
+            {capacityLimit && (
                 <p className="tooltip-row dim">
-                    Threshold: {targetCores.toFixed(4)} cores
+                    Capacity Limit: {capacityLimit.toFixed(4)} cores
                 </p>
             )}
         </div>

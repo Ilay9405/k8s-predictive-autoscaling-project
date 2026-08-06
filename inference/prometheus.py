@@ -147,7 +147,7 @@ class PrometheusClient:
 
             values = data["data"]["result"][0]["values"]
             df = pd.DataFrame(values, columns=["ts", "cpu"])
-            df["timestamp"] = pd.to_datetime(df["ts"].astype(float), unit="s")
+            df["timestamp"] = pd.to_datetime(df["ts"].astype(float), unit="s", utc=True)
             df["cpu"] = df["cpu"].astype(float)
             return df.drop(columns=["ts"]).sort_values("timestamp").reset_index(drop=True)
 
