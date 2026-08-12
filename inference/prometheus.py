@@ -125,7 +125,7 @@ class PrometheusClient:
             logger.error(f"Failed to fetch replica count for {deployment}: {e}")
         return 1
 
-    def fetch_deployment_cpu_series(self, deployment: str, step_seconds: int = 15, minutes: int = 50) -> pd.DataFrame:
+    def fetch_deployment_cpu_series(self, deployment: str, step_seconds: int = 15, minutes: int = 60) -> pd.DataFrame:
         """Fetch total aggregate CPU usage time series for an entire deployment."""
         query = (
             f'sum(rate(container_cpu_usage_seconds_total'
