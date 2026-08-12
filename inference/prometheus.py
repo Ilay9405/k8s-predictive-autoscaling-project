@@ -154,3 +154,43 @@ class PrometheusClient:
         except Exception as e:
             logger.error(f"Failed to fetch deployment CPU for {deployment}: {e}")
             return pd.DataFrame(columns=["timestamp", "cpu"])
+
+    def fetch_prediction_accuracy_series(self, deployment: str, step: int = 20, step_seconds: int = 15, minutes: int = 60) -> pd.DataFrame:
+        """
+        Fetch historical AI predictions and shift them forward in time so they align
+        with the actual CPU usage that occurred at that time.
+        step 20 = 5 minutes ahead (20 * 15s).
+        """
+        # We query the 'ml_predicted_cpu_rate' metric where step matches the requested horizon
+        query = (
+            f'ml_predicted_cpu_rate'
+            f'{{deployment="{deployment}", step="{step}"}}'
+        )
+        end = int(time.time())
+        start = end - minutes * 60
+        params = {"query": query, "start": start, "end": end, "step": str(step_seconds)}
+
+        try:
+            resp = requests.get(
+                f"{self.url}/api/v1/query_range", params=params, timeout=self.timeout
+            )
+            resp.raise_for_status()
+            data = resp.json()
+
+            if data.get("status") != "success" or not data.get("data", {}).get("result"):
+                return pd.DataFrame(columns=["timestamp", "predicted"])
+
+            values = data["data"]["result"][0]["values"]
+            df = pd.DataFrame(values, columns=["ts", "predicted"])
+            
+            # Convert to float and add the time shift!
+            # If a prediction was made at time T for T+5m, we shift the timestamp to T+5m
+            shift_seconds = step * step_seconds
+            df["timestamp"] = pd.to_datetime(df["ts"].astype(float) + shift_seconds, unit="s", utc=True)
+            df["predicted"] = df["predicted"].astype(float)
+            
+            return df.drop(columns=["ts"]).sort_values("timestamp").reset_index(drop=True)
+
+        except Exception as e:
+            logger.error(f"Failed to fetch prediction accuracy for {deployment}: {e}")
+            return pd.DataFrame(columns=["timestamp", "predicted"])

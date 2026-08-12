@@ -203,5 +203,39 @@ def startup_event():
 def get_status():
     return state
 
+@app.get("/api/accuracy")
+def get_accuracy(horizon_minutes: int = 5):
+    """
+    Returns historical data merging Actual CPU with what the AI predicted `horizon_minutes` ago.
+    """
+    prom_client = PrometheusClient(PROMETHEUS_URL, NAMESPACE)
+    
+    # 1 step = 15 seconds
+    step = int((horizon_minutes * 60) / 15)
+    
+    deployments = state.get("deployments", {}).keys()
+    result = {}
+    
+    for deployment in deployments:
+        actual_df = prom_client.fetch_deployment_cpu_series(deployment, minutes=60)
+        pred_df = prom_client.fetch_prediction_accuracy_series(deployment, step=step, minutes=60)
+        
+        actual_dict = {row["timestamp"].isoformat(): float(row["cpu"]) for _, row in actual_df.iterrows()} if not actual_df.empty else {}
+        pred_dict = {row["timestamp"].isoformat(): float(row["predicted"]) for _, row in pred_df.iterrows()} if not pred_df.empty else {}
+        
+        all_timestamps = sorted(set(actual_dict.keys()) | set(pred_dict.keys()))
+        
+        merged = []
+        for ts in all_timestamps:
+            merged.append({
+                "time": ts,
+                "actual": round(actual_dict[ts], 4) if ts in actual_dict else None,
+                "predicted": round(pred_dict[ts], 4) if ts in pred_dict else None
+            })
+            
+        result[deployment] = merged
+        
+    return result
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

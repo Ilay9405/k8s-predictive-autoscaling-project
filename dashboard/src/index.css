@@ -158,7 +158,18 @@ body {
 
 .stat-value {
   font-size: 2rem;
-  font-weight: 700;
+  font-weight: 500;
+}
+
+/* Header Row for Accuracy Page */
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.controls select {
+  outline: none;
+  cursor: pointer;
 }
 
 .stat-value.accent {
