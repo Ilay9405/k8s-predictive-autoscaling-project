@@ -1,7 +1,6 @@
 // dashboard/src/pages/Accuracy.jsx
 import React, { useState, useEffect } from 'react';
 import AccuracyChart from '../components/AccuracyChart';
-import { API_BASE_URL } from '../config';
 
 function Accuracy() {
     const [data, setData] = useState(null);
@@ -13,7 +12,7 @@ function Accuracy() {
     useEffect(() => {
         const fetchAccuracy = async () => {
             try {
-                const response = await fetch(`${API_BASE_URL}/api/accuracy?horizon_minutes=${horizon}`);
+                const response = await fetch(`/api/accuracy?horizon_minutes=${horizon}`);
                 if (!response.ok) throw new Error('Network response was not ok');
                 const json = await response.json();
                 setData(json);
