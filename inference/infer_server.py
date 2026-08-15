@@ -204,37 +204,60 @@ def get_status():
     return state
 
 @app.get("/api/accuracy")
-def get_accuracy(horizon_minutes: int = 5):
+def get_accuracy(horizon_minutes: int = 5, display_minutes: int = 60):
     """
     Returns historical data merging Actual CPU with what the AI predicted `horizon_minutes` ago.
+    Fetches `display_minutes` of actual data, and `display_minutes + horizon_minutes` of
+    prediction data so that after time-shifting the prediction window fully overlaps the actual window.
     """
+    import pandas as pd
     prom_client = PrometheusClient(PROMETHEUS_URL, NAMESPACE)
-    
-    # 1 step = 15 seconds
+
+    # 1 step = 15 seconds. This is the Prometheus metric label.
     step = int((horizon_minutes * 60) / 15)
-    
-    deployments = state.get("deployments", {}).keys()
+
+    # Fetch extra prediction history to compensate for the forward time-shift.
+    pred_fetch_minutes = display_minutes + horizon_minutes
+
+    deployments = list(state.get("deployments", {}).keys())
     result = {}
-    
+
     for deployment in deployments:
-        actual_df = prom_client.fetch_deployment_cpu_series(deployment, minutes=60)
-        pred_df = prom_client.fetch_prediction_accuracy_series(deployment, step=step, minutes=60)
+        actual_df = prom_client.fetch_deployment_cpu_series(deployment, minutes=display_minutes)
+        pred_df = prom_client.fetch_prediction_accuracy_series(
+            deployment, step=step, minutes=pred_fetch_minutes
+        )
+
+        if actual_df.empty:
+            result[deployment] = []
+            continue
+
+        # Ensure timestamps are UTC-aware for comparison
+        actual_df["ts"] = pd.to_datetime(actual_df["timestamp"]).dt.tz_localize("UTC") if actual_df["timestamp"].dt.tz is None else actual_df["timestamp"]
         
-        actual_dict = {row["timestamp"].isoformat(): float(row["cpu"]) for _, row in actual_df.iterrows()} if not actual_df.empty else {}
-        pred_dict = {row["timestamp"].isoformat(): float(row["predicted"]) for _, row in pred_df.iterrows()} if not pred_df.empty else {}
-        
-        all_timestamps = sorted(set(actual_dict.keys()) | set(pred_dict.keys()))
-        
+        if not pred_df.empty:
+            pred_df["ts"] = pd.to_datetime(pred_df["timestamp"]).dt.tz_localize("UTC") if pred_df["timestamp"].dt.tz is None else pred_df["timestamp"]
+
+        # Use actual_df as the spine — every actual point gets a slot
         merged = []
-        for ts in all_timestamps:
-            merged.append({
-                "time": ts,
-                "actual": round(actual_dict[ts], 4) if ts in actual_dict else None,
-                "predicted": round(pred_dict[ts], 4) if ts in pred_dict else None
-            })
-            
+        for _, actual_row in actual_df.iterrows():
+            point = {
+                "time": actual_row["timestamp"].isoformat(),
+                "actual": round(float(actual_row["cpu"]), 4),
+                "predicted": None,
+            }
+
+            # Find the nearest prediction timestamp (within 10 seconds tolerance)
+            if not pred_df.empty:
+                diff = (pred_df["ts"] - actual_row["ts"]).abs()
+                nearest_idx = diff.idxmin()
+                if diff[nearest_idx].total_seconds() <= 10:
+                    point["predicted"] = round(float(pred_df.loc[nearest_idx, "predicted"]), 4)
+
+            merged.append(point)
+
         result[deployment] = merged
-        
+
     return result
 
 if __name__ == "__main__":
