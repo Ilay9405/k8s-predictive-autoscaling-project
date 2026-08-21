@@ -17,7 +17,9 @@ import uvicorn
 from inference.prometheus import PrometheusClient
 from inference.predictor import PodPredictor
 from inference.scaler import calculate_recommended_replicas
+# pyrefly: ignore [missing-import]
 from kubernetes import client, config
+# pyrefly: ignore [missing-import]
 from kubernetes.client.rest import ApiException
 
 # Attempt to load Kubernetes config (works both locally and inside the cluster)
