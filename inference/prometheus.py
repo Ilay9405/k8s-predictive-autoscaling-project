@@ -81,7 +81,7 @@ class PrometheusClient:
         """Fetch CPU usage time series for a single pod."""
         query = (
             f'sum(rate(container_cpu_usage_seconds_total'
-            f'{{pod="{pod}", namespace="{self.namespace}"}}[30s])) by (pod)'
+            f'{{pod="{pod}", namespace="{self.namespace}"}}[1m])) by (pod)'
         )
         end = int(time.time())
         start = end - minutes * 60
@@ -129,7 +129,7 @@ class PrometheusClient:
         """Fetch total aggregate CPU usage time series for an entire deployment."""
         query = (
             f'sum(rate(container_cpu_usage_seconds_total'
-            f'{{namespace="{self.namespace}", pod=~"{deployment}-.*"}}[30s]))'
+            f'{{namespace="{self.namespace}", pod=~"{deployment}-.*"}}[1m]))'
         )
         end = int(time.time())
         start = end - minutes * 60

@@ -21,9 +21,7 @@ Feature Design Philosophy:
 import numpy as np
 import pandas as pd
 
-
-# Feature columns the model expects (in order).
-# This is the contract between feature engineering and model training.
+# Updated to include cycle_15m_sin and cycle_15m_cos[cite: 1]
 FEATURE_COLUMNS = [
     "cpu",
     "cpu_lag1", "cpu_lag2", "cpu_lag3", "cpu_lag5",
@@ -33,90 +31,57 @@ FEATURE_COLUMNS = [
     "rolling_mean_10", "rolling_std_10",
     "z_score", "is_spike",
     "delta_ema_short", "delta_ema_long",
-    "hour_sin", "hour_cos"
-    #probably best to make the predictor as generic as possible. to that end, further editing is done at 
-    #"cycle_15m_sin", "cycle_15m_cos",
+    "hour_sin", "hour_cos",
+    "cycle_15m_sin", "cycle_15m_cos"
 ]
 
-
 def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Transform a raw CPU time series into a rich feature DataFrame.
-
-    Args:
-        df: DataFrame with columns ['timestamp', 'cpu'].
-
-    Returns:
-        DataFrame with all engineered feature columns added.
-        NaNs from rolling/shift operations are backfilled, then zero-filled.
-    """
     d = df.copy()
 
     # ── Cyclical time-of-day encoding ───────────────────────────────
-    # Sine/cosine encoding so 23:59 is close to 00:00 (no discontinuity).
     hour = d["timestamp"].dt.hour + d["timestamp"].dt.minute / 60.0
     d["hour_sin"] = np.sin(2 * np.pi * hour / 24)
     d["hour_cos"] = np.cos(2 * np.pi * hour / 24)
 
     # ── Locust 15-Minute Cycle encoding ─────────────────────────────
-    # The locust test loops exactly every 15 minutes. We must encode this!
-    # We mustn't. We can train the model to recoginze this on its own, by simply providing the 15 min average.
-    # minute_in_cycle = (d["timestamp"].dt.minute % 15) + (d["timestamp"].dt.second / 60.0)
-    # d["cycle_15m_sin"] = np.sin(2 * np.pi * minute_in_cycle / 15)
-    # d["cycle_15m_cos"] = np.cos(2 * np.pi * minute_in_cycle / 15)
+    # Restored to give the model exact positional awareness[cite: 1]
+    minute_in_cycle = (d["timestamp"].dt.minute % 15) + (d["timestamp"].dt.second / 60.0)
+    d["cycle_15m_sin"] = np.sin(2 * np.pi * minute_in_cycle / 15)
+    d["cycle_15m_cos"] = np.cos(2 * np.pi * minute_in_cycle / 15)
 
     # ── Lag features ────────────────────────────────────────────────
-    # Recent history at different scales — gives the model a "memory"
-    # beyond just the current value.
     for lag in [1, 2, 3, 5]:
         d[f"cpu_lag{lag}"] = d["cpu"].shift(lag)
 
     # ── Velocity & Acceleration ─────────────────────────────────────
-    # 1st derivative: is CPU going up or down, and how fast?
-    # 2nd derivative: is the rate of change itself changing?
-    #   High velocity + negative acceleration = spike peak, about to fall
-    #   High velocity + positive acceleration = spike still growing
     d["velocity"] = d["cpu"].diff(1)
     d["acceleration"] = d["cpu"].diff(2)
 
     # ── Exponential Moving Averages (dual timescale) ────────────────
-    # Short EMA (3 steps) captures instantaneous momentum.
-    # Long EMA (10 steps) captures the baseline demand level.
-    # The gap between them is a momentum indicator (like MACD in finance).
     d["ema_short"] = d["cpu"].ewm(span=3, adjust=False).mean()
     d["ema_long"] = d["cpu"].ewm(span=10, adjust=False).mean()
 
     # ── Rolling statistics ──────────────────────────────────────────
-    # Mean: smoothed baseline at two scales
-    # Std: volatility — pods with noisy CPUs need wider prediction bands
     d["rolling_mean_5"] = d["cpu"].rolling(5).mean()
     d["rolling_std_5"] = d["cpu"].rolling(5).std()
     d["rolling_mean_10"] = d["cpu"].rolling(10).mean()
     d["rolling_std_10"] = d["cpu"].rolling(10).std()
 
     # ── Z-score (mean-reversion signal) ─────────────────────────────
-    # How many standard deviations away from the 10-step rolling mean?
-    #   z > 0: above baseline → likely to fall
-    #   z < 0: below baseline → likely to rebound
     denom = d["rolling_std_10"].replace(0, 1e-9)
     d["z_score"] = (d["cpu"] - d["rolling_mean_10"]) / denom
 
     # ── Spike detection flag ────────────────────────────────────────
-    # Hard boolean so LightGBM can split on "are we in a spike?"
-    # Threshold of |z| > 1.5 catches ~13% of values in a normal distribution.
     d["is_spike"] = (d["z_score"].abs() > 1.5).astype(float)
 
     # ── Deviation from EMA baselines ────────────────────────────────
-    # Explicit distance from each EMA — helps the model gauge how
-    # far the current value has deviated from the smoothed trend.
     d["delta_ema_short"] = d["cpu"] - d["ema_short"]
     d["delta_ema_long"] = d["cpu"] - d["ema_long"]
 
-    # Fill NaNs introduced by shifts/rolling (backfill then zero-fill)
     d = d.bfill().fillna(0)
     return d
 
-
+# Keep build_training_data and build_inference_features exactly as they were[cite: 1]
 def build_training_data(
     df: pd.DataFrame, lookback: int, horizon: int
 ) -> tuple[np.ndarray, np.ndarray]:
