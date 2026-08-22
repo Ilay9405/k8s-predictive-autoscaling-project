@@ -9,6 +9,11 @@ import threading
 import logging
 from datetime import datetime, timezone, timedelta
 
+# ── [LOGGING ADDITION START: Imports] ────────────────────────────────────────
+import csv
+from fastapi.responses import FileResponse
+# ── [LOGGING ADDITION END] ───────────────────────────────────────────────────
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import Gauge, make_asgi_app
@@ -39,6 +44,19 @@ PROMETHEUS_URL = os.getenv("PROMETHEUS_URL", "http://localhost:9090")
 NAMESPACE      = os.getenv("TARGET_NAMESPACE", "default")
 POLL_INTERVAL  = int(os.getenv("POLL_INTERVAL", "60"))
 UTILIZATION_TARGET_PCT = float(os.getenv("UTILIZATION_TARGET_PCT", "0.8")) # 0.8 = 80%
+
+# ── [LOGGING ADDITION START: Initialization] ─────────────────────────────────
+REFLECTION_LOG = "reflection_log.csv"
+
+# Initialize the CSV with headers if it doesn't exist
+if not os.path.exists(REFLECTION_LOG):
+    with open(REFLECTION_LOG, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow([
+            "timestamp", "deployment", "actual_cpu", 
+            "predicted_cpu_step1", "current_replicas", "recommended_replicas"
+        ])
+# ── [LOGGING ADDITION END] ───────────────────────────────────────────────────
 
 # Prometheus Metrics (Notice we added the 'deployment' label!)
 prom_predicted_cpu = Gauge('ml_predicted_cpu_rate', 'Predicted CPU usage', ['deployment', 'pod', 'step'])
@@ -168,6 +186,22 @@ def prediction_loop():
                         for i, p_val in enumerate(predictions):
                             prom_predicted_cpu.labels(deployment=deployment, pod=prom_label, step=str(i + 1)).set(float(p_val))
                         
+                        # ── [LOGGING ADDITION START: Write Row] ──────────────────────────
+                        try:
+                            with open(REFLECTION_LOG, "a", newline="") as f:
+                                writer = csv.writer(f)
+                                writer.writerow([
+                                    datetime.now(timezone.utc).isoformat(),
+                                    deployment,
+                                    round(float(current_cpu), 4),
+                                    round(float(predictions[0]), 4),
+                                    current_replicas,
+                                    recommended
+                                ])
+                        except Exception as log_err:
+                            logger.error(f"Failed to write reflection log: {log_err}")
+                        # ── [LOGGING ADDITION END] ───────────────────────────────────────
+
                         last_ts = df['timestamp'].iloc[-1]
                         future_predictions = []
                         for i, p_val in enumerate(predictions):
@@ -204,6 +238,15 @@ def startup_event():
 @app.get("/api/status")
 def get_status():
     return state
+
+# ── [LOGGING ADDITION START: Download Endpoint] ──────────────────────────────
+@app.get("/api/logs/download")
+def download_logs():
+    """Allows pulling the reflection CSV directly over HTTP."""
+    if os.path.exists(REFLECTION_LOG):
+        return FileResponse(REFLECTION_LOG, media_type="text/csv", filename="reflection_log.csv")
+    return {"error": "Log file not created yet"}
+# ── [LOGGING ADDITION END] ───────────────────────────────────────────────────
 
 @app.get("/api/accuracy")
 def get_accuracy(horizon_minutes: int = 5, display_minutes: int = 60):

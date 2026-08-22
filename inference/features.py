@@ -33,8 +33,9 @@ FEATURE_COLUMNS = [
     "rolling_mean_10", "rolling_std_10",
     "z_score", "is_spike",
     "delta_ema_short", "delta_ema_long",
-    "hour_sin", "hour_cos",
-    "cycle_15m_sin", "cycle_15m_cos",
+    "hour_sin", "hour_cos"
+    #probably best to make the predictor as generic as possible. to that end, further editing is done at 
+    #"cycle_15m_sin", "cycle_15m_cos",
 ]
 
 
@@ -59,9 +60,10 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
 
     # ── Locust 15-Minute Cycle encoding ─────────────────────────────
     # The locust test loops exactly every 15 minutes. We must encode this!
-    minute_in_cycle = (d["timestamp"].dt.minute % 15) + (d["timestamp"].dt.second / 60.0)
-    d["cycle_15m_sin"] = np.sin(2 * np.pi * minute_in_cycle / 15)
-    d["cycle_15m_cos"] = np.cos(2 * np.pi * minute_in_cycle / 15)
+    # We mustn't. We can train the model to recoginze this on its own, by simply providing the 15 min average.
+    # minute_in_cycle = (d["timestamp"].dt.minute % 15) + (d["timestamp"].dt.second / 60.0)
+    # d["cycle_15m_sin"] = np.sin(2 * np.pi * minute_in_cycle / 15)
+    # d["cycle_15m_cos"] = np.cos(2 * np.pi * minute_in_cycle / 15)
 
     # ── Lag features ────────────────────────────────────────────────
     # Recent history at different scales — gives the model a "memory"
