@@ -42,7 +42,7 @@ logger = logging.getLogger("predscale.server")
 # Configuration
 PROMETHEUS_URL = os.getenv("PROMETHEUS_URL", "http://localhost:9090")
 NAMESPACE      = os.getenv("TARGET_NAMESPACE", "default")
-POLL_INTERVAL  = int(os.getenv("POLL_INTERVAL", "15"))
+POLL_INTERVAL  = int(os.getenv("POLL_INTERVAL", "15")) # Changed from 60 to 15
 UTILIZATION_TARGET_PCT = float(os.getenv("UTILIZATION_TARGET_PCT", "0.8")) # 0.8 = 80%
 
 # ── [LOGGING ADDITION START: Initialization] ─────────────────────────────────
