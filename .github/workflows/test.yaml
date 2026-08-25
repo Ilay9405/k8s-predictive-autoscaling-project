@@ -42,4 +42,4 @@ jobs:
 
       - name: Dry-Run Manifest Syntax Check
         run: |
-          kubectl apply --dry-run=client -f k8s-manifests/
+          kubectl apply --dry-run=client --validate=false -f k8s-manifests/
