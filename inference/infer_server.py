@@ -22,19 +22,25 @@ import uvicorn
 from inference.prometheus import PrometheusClient
 from inference.predictor import PodPredictor
 from inference.scaler import calculate_recommended_replicas
-# pyrefly: ignore [missing-import]
-from kubernetes import client, config
-# pyrefly: ignore [missing-import]
-from kubernetes.client.rest import ApiException
+try:
+    from kubernetes import client, config
+    from kubernetes.client.rest import ApiException
+    HAS_KUBERNETES = True
+except ImportError:
+    client = None
+    config = None
+    ApiException = Exception
+    HAS_KUBERNETES = False
 
 # Attempt to load Kubernetes config (works both locally and inside the cluster)
-try:
-    config.load_incluster_config()
-except:
+if HAS_KUBERNETES and config:
     try:
-        config.load_kube_config()
+        config.load_incluster_config()
     except:
-        pass
+        try:
+            config.load_kube_config()
+        except:
+            pass
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("predscale.server")
@@ -74,6 +80,8 @@ app.mount("/metrics", make_asgi_app())
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 def ensure_keda_scaledobject_exists(deployment_name, namespace):
+    if not HAS_KUBERNETES or client is None:
+        return
     try:
         api = client.CustomObjectsApi()
         scaler_name = f"{deployment_name}-ml-scaler"
