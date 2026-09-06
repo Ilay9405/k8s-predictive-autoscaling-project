@@ -29,7 +29,7 @@ jobs:
         run: |
           python -m pytest tests/ -v --cov=inference --cov-report=term-missing
 
-  k8s-manifest-validation:
+    k8s-manifest-validation:
     name: Validate Kubernetes Manifests
     runs-on: ubuntu-latest
 
@@ -37,9 +37,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@v3
-
-      - name: Dry-Run Manifest Syntax Check
-        run: |
-          kubectl apply --dry-run=client --validate=false -f k8s-manifests/
+      - name: Scan Kubernetes Manifests with KubeLinter
+        uses: stackrox/kube-linter-action@v1
+        with:
+          directory: k8s-manifests
