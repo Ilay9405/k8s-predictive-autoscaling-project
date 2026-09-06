@@ -41,3 +41,4 @@ jobs:
         uses: stackrox/kube-linter-action@v1
         with:
           directory: k8s-manifests
+          config: .kube-linter.yml
