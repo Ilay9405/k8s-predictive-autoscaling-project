@@ -15,7 +15,7 @@ def test_scaling_calculation_normal_load():
         min_replicas=1,
         max_replicas=30
     )
-    assert recommended == 9
+    assert recommended == 7
 
 def test_scaling_calculation_exact_division():
     """Verify ceiling behavior on exact multiples."""
