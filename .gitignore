@@ -55,3 +55,9 @@ frontend/.vite/
 # Environment
 .env
 .env.local
+
+# Testing / Coverage
+.coverage
+.coverage.*
+.pytest_cache/
+htmlcov/
