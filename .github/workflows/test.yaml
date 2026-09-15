@@ -20,5 +20,8 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install Dependencies
+        run: pip install -r inference/requirements.txt 
+
       - name: Run Pytest Suite
         run: python -m pytest tests/
