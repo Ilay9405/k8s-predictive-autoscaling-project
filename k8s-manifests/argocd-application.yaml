@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: predscale-app
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/Ilay9405/k8s-predictive-autoscaling-project.git'
+    targetRevision: main
+    path: k8s-manifests
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: predscalens
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
