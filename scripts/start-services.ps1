@@ -1,4 +1,4 @@
-# scripts/start-services.ps1 — Start all PredScale services as background jobs
+# scripts/start-services.ps1 — Start all PredScale services as background jobs and open browser tabs
 
 Write-Host "Starting PredScale Background Services..." -ForegroundColor Green
 
@@ -26,4 +26,13 @@ Start-Job -Name "inference-api" -ScriptBlock { kubectl port-forward -n predscale
 Write-Host "  [+] Inference API Docs:   http://localhost:8000/docs" -ForegroundColor Cyan
 
 Write-Host "All 5 background services are running!" -ForegroundColor Yellow
-Write-Host "To stop them later, run: .\scripts\stop-services.ps1" -ForegroundColor Yellow
+Write-Host "Opening browser tabs..." -ForegroundColor Green
+
+# Open browser tabs automatically
+Start-Process "https://localhost:8080"
+Start-Process "http://localhost:3000"
+Start-Process "http://localhost:8089"
+Start-Process "http://localhost:9090"
+Start-Process "http://localhost:8000/docs"
+
+Write-Host "To stop services later, run: .\scripts\stop-services.ps1" -ForegroundColor Yellow
