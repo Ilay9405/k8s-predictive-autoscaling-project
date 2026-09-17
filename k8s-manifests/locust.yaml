@@ -17,8 +17,11 @@ data:
 
         @task
         def hit_endpoint(self):
-            # A 2-second timeout so we don't freeze if the victim app crashes
-            self.client.get("/", timeout=2)
+            with self.client.get("/", catch_response=True) as response:
+                if response.status_code == 200:
+                    response.success()
+                else:
+                    response.failure(f"Status code {response.status_code}")
 
      # 2. The Traffic Controller (Flash Sale pattern)
     class FlashSaleShape(LoadTestShape):
