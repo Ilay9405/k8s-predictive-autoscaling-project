@@ -13,7 +13,6 @@ spec:
     path: k8s-manifests
   destination:
     server: 'https://kubernetes.default.svc'
-    namespace: predscalens
   syncPolicy:
     automated:
       prune: true

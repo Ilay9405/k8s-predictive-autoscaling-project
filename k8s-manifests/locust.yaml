@@ -69,7 +69,7 @@ spec:
             - "/mnt/locust/locustfile.py"
             - "--headless"
             - "--host"
-            - "http://stressor-app-service.predscalens.svc.cluster.local"
+            - "http://stressor-app-service.default.svc.cluster.local"
           volumeMounts:
             - name: locust-script-vol
               mountPath: /mnt/locust
