@@ -1,6 +1,6 @@
 """
 infer_server.py — FastAPI inference server and prediction loop.
-Upgraded to Cluster-Wide God Mode!
+Dynamic cluster-wide KEDA operator integration.
 """
 
 import os
@@ -121,7 +121,7 @@ def ensure_keda_scaledobject_exists(deployment_name, namespace):
                 api.create_namespaced_custom_object(
                     group="keda.sh", version="v1alpha1", namespace=namespace, plural="scaledobjects", body=keda_manifest
                 )
-                logger.info(f"[*] GOD MODE: Automatically injected KEDA ScaledObject for '{deployment_name}'")
+                logger.info(f"[*] KEDA OPERATOR: Automatically injected ScaledObject for '{deployment_name}'")
     except Exception as e:
         logger.error(f"[!] Operator error: Could not verify KEDA object for {deployment_name}: {e}")
 
@@ -144,7 +144,7 @@ def prediction_loop():
                 if deployment not in state["deployments"]:
                     state["deployments"][deployment] = {}
                     
-                # --> TRIGGER GOD MODE <--
+                # --> DYNAMIC KEDA OPERATOR INJECTION <--
                 ensure_keda_scaledobject_exists(deployment, NAMESPACE)
                     
                 # Dynamically discover the CPU caliber for this specific deployment
