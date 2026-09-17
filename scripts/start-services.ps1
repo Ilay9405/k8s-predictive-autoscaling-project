@@ -10,15 +10,11 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "Write-Host '--- A
 Write-Host "  [+] Opening PredScale Dashboard port-forward window (Port 3000)..." -ForegroundColor Cyan
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "Write-Host '--- PredScale Dashboard (Port 3000) ---' -ForegroundColor Green; kubectl port-forward -n predscalens svc/dashboard-service 3000:80"
 
-# 3. Locust Traffic Generator (Port 8089)
-Write-Host "  [+] Opening Locust UI port-forward window (Port 8089)..." -ForegroundColor Cyan
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "Write-Host '--- Locust Load UI (Port 8089) ---' -ForegroundColor Green; kubectl port-forward -n predscalens svc/locust-service 8089:8089"
-
-# 4. Prometheus Monitoring (Port 9090)
+# 3. Prometheus Monitoring (Port 9090)
 Write-Host "  [+] Opening Prometheus UI port-forward window (Port 9090)..." -ForegroundColor Cyan
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "Write-Host '--- Prometheus UI (Port 9090) ---' -ForegroundColor Green; kubectl port-forward -n monitoring svc/prometheus-k8s 9090:9090"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "Write-Host '--- Prometheus UI (Port 9090) ---' -ForegroundColor Green; kubectl port-forward -n monitoring svc/prometheus-operated 9090:9090"
 
-# 5. ML Inference API Docs (Port 8000)
+# 4. ML Inference API Docs (Port 8000)
 Write-Host "  [+] Opening Inference API Docs port-forward window (Port 8000)..." -ForegroundColor Cyan
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "Write-Host '--- Inference API Docs (Port 8000) ---' -ForegroundColor Green; kubectl port-forward -n predscalens svc/ml-inference-service 8000:8000"
 
@@ -28,8 +24,7 @@ Start-Sleep -Seconds 3
 Write-Host "Opening browser tabs..." -ForegroundColor Green
 cmd.exe /c start https://localhost:8080
 cmd.exe /c start http://localhost:3000
-cmd.exe /c start http://localhost:8089
 cmd.exe /c start http://localhost:9090
 cmd.exe /c start http://localhost:8000/docs
 
-Write-Host "All 5 service windows launched with -NoExit (they will stay open to show status and errors)." -ForegroundColor Yellow
+Write-Host "All service windows launched with -NoExit (they will stay open to show status and errors)." -ForegroundColor Yellow

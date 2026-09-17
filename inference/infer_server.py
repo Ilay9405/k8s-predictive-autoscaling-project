@@ -74,7 +74,7 @@ state = {
     "deployments": {},
 }
 
-app = FastAPI(title="PredScale God Mode Server")
+app = FastAPI(title="PredScale Inference API")
 app.mount("/metrics", make_asgi_app())
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
