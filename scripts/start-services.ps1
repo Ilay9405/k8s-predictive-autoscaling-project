@@ -1,38 +1,35 @@
-# scripts/start-services.ps1 — Start all PredScale services as background jobs and open browser tabs
+# scripts/start-services.ps1 — Start all PredScale services in visible PowerShell windows that stay open (-NoExit)
 
-Write-Host "Starting PredScale Background Services..." -ForegroundColor Green
-
-# Stop any old running jobs first to prevent port conflicts
-Get-Job | Where-Object { $_.Name -match "argocd-ui|predscale-dashboard|locust-ui|prometheus-ui|inference-api" } | Stop-Job -ErrorAction SilentlyContinue | Remove-Job -ErrorAction SilentlyContinue
+Write-Host "Starting PredScale Port-Forwarding Windows..." -ForegroundColor Green
 
 # 1. ArgoCD Web UI (Port 8080)
-Start-Job -Name "argocd-ui" -ScriptBlock { kubectl port-forward svc/argocd-server -n argocd 8080:443 } | Out-Null
-Write-Host "  [+] ArgoCD UI:          https://localhost:8080 (User: admin | Pass: YeqWrJWWSOfTNlqa)" -ForegroundColor Cyan
+Write-Host "  [+] Opening ArgoCD UI port-forward window (Port 8080)..." -ForegroundColor Cyan
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "Write-Host '--- ArgoCD UI (Port 8080) ---' -ForegroundColor Green; kubectl port-forward svc/argocd-server -n argocd 8080:443"
 
 # 2. PredScale Dashboard (Port 3000)
-Start-Job -Name "predscale-dashboard" -ScriptBlock { kubectl port-forward -n predscalens svc/dashboard-service 3000:80 } | Out-Null
-Write-Host "  [+] PredScale Dashboard: http://localhost:3000" -ForegroundColor Cyan
+Write-Host "  [+] Opening PredScale Dashboard port-forward window (Port 3000)..." -ForegroundColor Cyan
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "Write-Host '--- PredScale Dashboard (Port 3000) ---' -ForegroundColor Green; kubectl port-forward -n predscalens svc/dashboard-service 3000:80"
 
 # 3. Locust Traffic Generator (Port 8089)
-Start-Job -Name "locust-ui" -ScriptBlock { kubectl port-forward -n predscalens svc/locust-service 8089:8089 } | Out-Null
-Write-Host "  [+] Locust Load UI:      http://localhost:8089" -ForegroundColor Cyan
+Write-Host "  [+] Opening Locust UI port-forward window (Port 8089)..." -ForegroundColor Cyan
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "Write-Host '--- Locust Load UI (Port 8089) ---' -ForegroundColor Green; kubectl port-forward -n predscalens svc/locust-service 8089:8089"
 
 # 4. Prometheus Monitoring (Port 9090)
-Start-Job -Name "prometheus-ui" -ScriptBlock { kubectl port-forward -n monitoring svc/prometheus-k8s 9090:9090 } | Out-Null
-Write-Host "  [+] Prometheus UI:       http://localhost:9090" -ForegroundColor Cyan
+Write-Host "  [+] Opening Prometheus UI port-forward window (Port 9090)..." -ForegroundColor Cyan
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "Write-Host '--- Prometheus UI (Port 9090) ---' -ForegroundColor Green; kubectl port-forward -n monitoring svc/prometheus-k8s 9090:9090"
 
 # 5. ML Inference API Docs (Port 8000)
-Start-Job -Name "inference-api" -ScriptBlock { kubectl port-forward -n predscalens svc/ml-inference-service 8000:8000 } | Out-Null
-Write-Host "  [+] Inference API Docs:   http://localhost:8000/docs" -ForegroundColor Cyan
+Write-Host "  [+] Opening Inference API Docs port-forward window (Port 8000)..." -ForegroundColor Cyan
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "Write-Host '--- Inference API Docs (Port 8000) ---' -ForegroundColor Green; kubectl port-forward -n predscalens svc/ml-inference-service 8000:8000"
 
-Write-Host "All 5 background services are running!" -ForegroundColor Yellow
+# Give port-forwards 3 seconds to establish connections before opening browser tabs
+Start-Sleep -Seconds 3
+
 Write-Host "Opening browser tabs..." -ForegroundColor Green
+cmd.exe /c start https://localhost:8080
+cmd.exe /c start http://localhost:3000
+cmd.exe /c start http://localhost:8089
+cmd.exe /c start http://localhost:9090
+cmd.exe /c start http://localhost:8000/docs
 
-# Open browser tabs automatically
-Start-Process "https://localhost:8080"
-Start-Process "http://localhost:3000"
-Start-Process "http://localhost:8089"
-Start-Process "http://localhost:9090"
-Start-Process "http://localhost:8000/docs"
-
-Write-Host "To stop services later, run: .\scripts\stop-services.ps1" -ForegroundColor Yellow
+Write-Host "All 5 service windows launched with -NoExit (they will stay open to show status and errors)." -ForegroundColor Yellow
