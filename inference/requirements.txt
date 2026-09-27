@@ -1,5 +1,6 @@
 # Core ML
-lightgbm>=4.0.0
+# PyTorch CPU-only — install via special index to avoid the 2GB CUDA wheel
+torch>=2.0.0
 numpy>=1.24.0
 pandas>=2.0.0
 scikit-learn>=1.3.0

@@ -1,5 +1,5 @@
 """
-tests/unit/test_predictor.py — Unit tests for PodPredictor training and inference pipeline.
+tests/unit/test_predictor.py — Unit tests for PodPredictor (LSTM) training and inference pipeline.
 """
 
 import pytest
@@ -31,17 +31,26 @@ def test_predictor_insufficient_data_returns_false():
     assert predictor.train(short_df) is False
 
 def test_predictor_train_and_predict_success(synthetic_cpu_history):
-    """Train PodPredictor and assert predictions are valid non-negative numpy array."""
+    """Train PodPredictor (LSTM) and assert predictions are a valid non-negative numpy array."""
     lookback = 30
     predict_steps = 10
     predictor = PodPredictor(lookback_steps=lookback, predict_steps=predict_steps)
-    
+
     success = predictor.train(synthetic_cpu_history)
     assert success is True
-    assert len(predictor.models) == predict_steps
-    
+    # LSTM stores one model object, not a list per step
+    assert predictor.model is not None
+
     preds = predictor.predict(synthetic_cpu_history)
     assert preds is not None
     assert isinstance(preds, np.ndarray)
     assert len(preds) == predict_steps
     assert (preds >= 0.0).all()  # non-negative clamp assertion
+
+def test_predictor_predict_after_train_shape(synthetic_cpu_history):
+    """Output shape must match predict_steps regardless of lookback size."""
+    for predict_steps in [5, 10, 20]:
+        predictor = PodPredictor(lookback_steps=30, predict_steps=predict_steps)
+        predictor.train(synthetic_cpu_history)
+        preds = predictor.predict(synthetic_cpu_history)
+        assert preds.shape == (predict_steps,), f"Expected shape ({predict_steps},), got {preds.shape}"
