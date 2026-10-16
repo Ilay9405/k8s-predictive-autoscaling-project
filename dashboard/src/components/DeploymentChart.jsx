@@ -5,7 +5,12 @@ import {
     Tooltip, ResponsiveContainer, ReferenceLine, Area, ComposedChart
 } from 'recharts';
 
-function DeploymentChart({ history, predictions, targetCores, currentReplicas, recommendedReplicas }) {
+function DeploymentChart({ history, predictions, targetCores, currentReplicas, recommendedReplicas, currentCpu }) {
+    // Capacity limit = target CPU per pod × number of running pods
+    const capacityLimit = (targetCores && currentReplicas) ? targetCores * currentReplicas : null;
+    // Turn the reference line red when live CPU is at or above the limit
+    const isBreached = capacityLimit !== null && currentCpu !== undefined && currentCpu >= capacityLimit;
+    const capacityColor = isBreached ? '#ef4444' : 'var(--accent-purple)';
     // Build the unified CPU chart data: historical (solid) + predicted (dashed)
     const historyData = (history || []).map(point => ({
         time: new Date(point.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
@@ -75,19 +80,22 @@ function DeploymentChart({ history, predictions, targetCores, currentReplicas, r
 
                             <Tooltip content={<CpuTooltip targetCores={targetCores} currentReplicas={currentReplicas} />} />
 
-                            {/* Threshold reference line (Dynamic Capacity) */}
-                            <ReferenceLine
-                                y={targetCores * currentReplicas}
-                                stroke="var(--accent-purple)"
-                                strokeDasharray="6 4"
-                                strokeWidth={1.5}
-                                label={{
-                                    position: 'right',
-                                    value: `Capacity Limit: ${(targetCores * currentReplicas).toFixed(2)}`,
-                                    fill: 'var(--accent-purple)',
-                                    fontSize: 11
-                                }}
-                            />
+                            {/* Capacity limit reference line — red when breached, purple when safe */}
+                            {capacityLimit !== null && (
+                                <ReferenceLine
+                                    y={capacityLimit}
+                                    stroke={capacityColor}
+                                    strokeDasharray="6 4"
+                                    strokeWidth={isBreached ? 2 : 1.5}
+                                    label={{
+                                        position: 'right',
+                                        value: `Capacity Limit: ${capacityLimit.toFixed(2)}`,
+                                        fill: capacityColor,
+                                        fontSize: 11,
+                                        fontWeight: isBreached ? 700 : 400,
+                                    }}
+                                />
+                            )}
 
                             {/* Historical CPU — solid blue line with gradient fill */}
                             <Area
@@ -128,8 +136,8 @@ function DeploymentChart({ history, predictions, targetCores, currentReplicas, r
                         AI Prediction
                     </div>
                     <div className="legend-item">
-                        <span className="legend-line dotted red"></span>
-                        Capacity Limit
+                        <span className="legend-line dotted" style={{ borderColor: isBreached ? '#ef4444' : 'var(--accent-purple)' }}></span>
+                        Capacity Limit {isBreached && <span style={{ color: '#ef4444', fontWeight: 700, marginLeft: 4 }}>⚠ EXCEEDED</span>}
                     </div>
                 </div>
             </div>

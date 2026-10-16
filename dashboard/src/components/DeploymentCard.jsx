@@ -57,6 +57,7 @@ function DeploymentCard({ name, info }) {
                             predictions={[]}
                             targetCores={info.target_cores}
                             currentReplicas={info.current_replicas}
+                            currentCpu={info.current_cpu}
                         />
                     )}
                 </div>
@@ -67,6 +68,7 @@ function DeploymentCard({ name, info }) {
                     targetCores={info.target_cores}
                     currentReplicas={info.current_replicas}
                     recommendedReplicas={info.recommended_replicas}
+                    currentCpu={info.current_cpu}
                 />
             )}
         </div>
