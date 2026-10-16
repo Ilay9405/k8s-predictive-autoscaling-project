@@ -1,27 +1,28 @@
 name: Build and Deploy Inference server
 
-# 1. This tells GitHub to trigger the pipeline ONLY when you push to the 'main' branch
 on:
   push:
     branches:
       - main
+    paths:
+      - "inference/**"
 
-# 2. We need to give the GitHub server permission to upload packages to your account
 permissions:
   packages: write
-  contents: read
+  contents: write   # needed to commit the manifest tag update back to Git
 
 jobs:
   build-and-push:
-    # 3. This spins up a fresh Ubuntu Linux server in the cloud for us
     runs-on: ubuntu-latest
 
     steps:
-      # Step A: Download your code onto the cloud server
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # Use a token that can push back to the repo (PAT stored as secret)
+          # Falls back to GITHUB_TOKEN for read — write needs explicit token for protected branches
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Step B: Log into the GitHub Container Registry using the automatic built-in token
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
@@ -29,19 +30,31 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Step C: Generate the name and tag for the image
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository }}-inference
+      # Pin the image tag to the exact git SHA so ArgoCD can detect real changes.
+      # Mutable tags like :main never change from ArgoCD's perspective, so it never redeploys.
+      - name: Set image tag
+        id: tag
+        run: echo "tag=ghcr.io/${{ github.repository }}-inference:${{ github.sha }}" >> $GITHUB_OUTPUT
 
-      # Step D: Actually run 'docker build' using the Dockerfile inside your inference/ folder, then push it!
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./inference/Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.tag.outputs.tag }}
+
+      # Update the manifest with the new SHA tag and commit it back to Git.
+      # ArgoCD watches Git — when it sees this commit, it will diff the image tag
+      # and trigger a rolling update on the inference deployment automatically.
+      - name: Update manifest image tag
+        run: |
+          sed -i "s|ghcr.io/${{ github.repository }}-inference:.*|${{ steps.tag.outputs.tag }}|g" k8s-manifests/predscale.yaml
+
+      - name: Commit and push updated manifest
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add k8s-manifests/predscale.yaml
+          git diff --staged --quiet || git commit -m "ci: update inference image to ${{ github.sha }}"
+          git push

@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: dashboard
-          image: ghcr.io/ilay9405/k8s-predictive-autoscaling-project-dashboard:main
+          image: ghcr.io/ilay9405/k8s-predictive-autoscaling-project-dashboard:0139638afc435a3e1fb27ab96b12b76311a6b5ad
           imagePullPolicy: Always
           ports:
             - containerPort: 80
