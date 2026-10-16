@@ -167,6 +167,7 @@ body {
   justify-content: space-between;
   align-items: center;
 }
+
 .controls select {
   outline: none;
   cursor: pointer;
@@ -205,8 +206,17 @@ body {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.8); }
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
 }
 
 .progress-bar-container {
@@ -298,24 +308,26 @@ body {
   background: var(--accent-purple);
 }
 
+/* Added red variant for the dotted line */
+.legend-line.red {
+  background: #f87171;
+  /* Or any shade of red you prefer, e.g., #ef4444 */
+}
+
 .legend-line.dashed {
-  background: repeating-linear-gradient(
-    90deg,
-    var(--accent-purple) 0px,
-    var(--accent-purple) 6px,
-    transparent 6px,
-    transparent 10px
-  );
+  background: repeating-linear-gradient(90deg,
+      var(--accent-purple) 0px,
+      var(--accent-purple) 6px,
+      transparent 6px,
+      transparent 10px);
 }
 
 .legend-line.dotted {
-  background: repeating-linear-gradient(
-    90deg,
-    var(--accent-purple) 0px,
-    var(--accent-purple) 3px,
-    transparent 3px,
-    transparent 6px
-  );
+  background: repeating-linear-gradient(90deg,
+      #f87171 0px,
+      #f87171 3px,
+      transparent 3px,
+      transparent 6px);
 }
 
 /* ── Custom Tooltip ──────────────────────────────────────── */
