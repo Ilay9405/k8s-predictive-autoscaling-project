@@ -50,6 +50,10 @@ PROMETHEUS_URL = os.getenv("PROMETHEUS_URL", "http://localhost:9090")
 NAMESPACE      = os.getenv("TARGET_NAMESPACE", "default")
 POLL_INTERVAL  = int(os.getenv("POLL_INTERVAL", "15")) # Changed from 60 to 15
 UTILIZATION_TARGET_PCT = float(os.getenv("UTILIZATION_TARGET_PCT", "0.8")) # 0.8 = 80%
+# Retrain the model every N seconds. Decouples prediction cadence (15s) from
+# model-rebuild cadence (5min). Traffic patterns don't shift every 15 seconds;
+# retraining that frequently throws away learned weights for no benefit.
+RETRAIN_INTERVAL_SECONDS = int(os.getenv("RETRAIN_INTERVAL_SECONDS", "300")) # 5 minutes
 
 # ── [LOGGING ADDITION START: Initialization] ─────────────────────────────────
 REFLECTION_LOG = "reflection_log.csv"
@@ -128,6 +132,8 @@ def ensure_keda_scaledobject_exists(deployment_name, namespace):
 def prediction_loop():
     prom_client = PrometheusClient(PROMETHEUS_URL, NAMESPACE)
     predictor = PodPredictor(lookback_steps=120, predict_steps=60)
+    # Track the last time we did a full model retrain, per deployment
+    last_trained_at: dict[str, float] = {}
     
     while True:
         try:
@@ -181,55 +187,67 @@ def prediction_loop():
                 
                 current_cpu = df["cpu"].iloc[-1]
                 
-                if predictor.train(df):
-                    predictions = predictor.predict(df)
-                    if predictions is not None:
-                        recommended = calculate_recommended_replicas(
-                            predictions[0], current_replicas, target_cpu_utilization=target_cores
-                        )
-                        
-                        # Use a stable label for Prometheus metrics
-                        prom_label = f"{deployment}-aggregate"
-                        prom_recommended_replicas.labels(deployment=deployment, pod=prom_label).set(recommended)
-                        for i, p_val in enumerate(predictions):
-                            prom_predicted_cpu.labels(deployment=deployment, pod=prom_label, step=str(i + 1)).set(float(p_val))
-                        
-                        # ── [LOGGING ADDITION START: Write Row] ──────────────────────────
-                        try:
-                            with open(REFLECTION_LOG, "a", newline="") as f:
-                                writer = csv.writer(f)
-                                writer.writerow([
-                                    datetime.now(timezone.utc).isoformat(),
-                                    deployment,
-                                    round(float(current_cpu), 4),
-                                    round(float(predictions[0]), 4),
-                                    current_replicas,
-                                    recommended
-                                ])
-                        except Exception as log_err:
-                            logger.error(f"Failed to write reflection log: {log_err}")
-                        # ── [LOGGING ADDITION END] ───────────────────────────────────────
+                # Only retrain if we haven't trained for this deployment recently.
+                # This decouples prediction frequency (every 15s) from model rebuild
+                # frequency (every 5min), avoiding wasteful cold-start retraining.
+                now = time.time()
+                should_retrain = (
+                    deployment not in last_trained_at
+                    or (now - last_trained_at[deployment]) >= RETRAIN_INTERVAL_SECONDS
+                )
+                if should_retrain:
+                    if predictor.train(df):
+                        last_trained_at[deployment] = now
+                        logger.info(f"[{deployment}] Model retrained at {datetime.now(timezone.utc).isoformat()}")
 
-                        last_ts = df['timestamp'].iloc[-1]
-                        future_predictions = []
-                        for i, p_val in enumerate(predictions):
-                            future_predictions.append({
-                                "time": (last_ts + timedelta(seconds=(i+1)*15)).isoformat(),
-                                "cpu": round(float(p_val), 4)
-                            })
+                predictions = predictor.predict(df)
+                if predictions is not None:
+                    recommended = calculate_recommended_replicas(
+                        predictions[0], current_replicas, target_cpu_utilization=target_cores
+                    )
+                    
+                    # Use a stable label for Prometheus metrics
+                    prom_label = f"{deployment}-aggregate"
+                    prom_recommended_replicas.labels(deployment=deployment, pod=prom_label).set(recommended)
+                    for i, p_val in enumerate(predictions):
+                        prom_predicted_cpu.labels(deployment=deployment, pod=prom_label, step=str(i + 1)).set(float(p_val))
+                    
+                    # ── [LOGGING ADDITION START: Write Row] ──────────────────────────
+                    try:
+                        with open(REFLECTION_LOG, "a", newline="") as f:
+                            writer = csv.writer(f)
+                            writer.writerow([
+                                datetime.now(timezone.utc).isoformat(),
+                                deployment,
+                                round(float(current_cpu), 4),
+                                round(float(predictions[0]), 4),
+                                current_replicas,
+                                recommended
+                            ])
+                    except Exception as log_err:
+                        logger.error(f"Failed to write reflection log: {log_err}")
+                    # ── [LOGGING ADDITION END] ───────────────────────────────────────
+
+                    last_ts = df['timestamp'].iloc[-1]
+                    future_predictions = []
+                    for i, p_val in enumerate(predictions):
+                        future_predictions.append({
+                            "time": (last_ts + timedelta(seconds=(i+1)*15)).isoformat(),
+                            "cpu": round(float(p_val), 4)
+                        })
+                    
+                    state["deployments"][deployment] = {
+                        "cpu_request": cpu_request,
+                        "target_cores": target_cores,
+                        "current_cpu": round(float(current_cpu), 4),
+                        "current_replicas": current_replicas,
+                        "recommended_replicas": recommended,
+                        "data_points": len(df),
+                        "required_points": 185,
+                        "history": history[-200:],
+                        "predictions": future_predictions,
+                    }
                         
-                        state["deployments"][deployment] = {
-                            "cpu_request": cpu_request,
-                            "target_cores": target_cores,
-                            "current_cpu": round(float(current_cpu), 4),
-                            "current_replicas": current_replicas,
-                            "recommended_replicas": recommended,
-                            "data_points": len(df),
-                            "required_points": 185,
-                            "history": history[-200:],
-                            "predictions": future_predictions,
-                        }
-                             
             state["last_update"] = datetime.now(timezone.utc).isoformat()
             
         except Exception as e:
