@@ -42,7 +42,7 @@ class PodPredictor:
             "metric": "mse",
             "boosting_type": "gbdt",
             "num_leaves": 31,
-            "learning_rate": 0.05,
+            "learning_rate": 0.55,
             "feature_fraction": 0.8,
             "bagging_fraction": 0.8,
             "bagging_freq": 5,

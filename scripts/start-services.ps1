@@ -2,23 +2,24 @@
 
 Write-Host "Starting PredScale Services in the background..." -ForegroundColor Green
 
-# Stop any old running jobs first to prevent port conflicts
+# Stop any old running processes or jobs first to prevent port conflicts
 Get-Job | Where-Object { $_.Name -match "argocd-ui|predscale-dashboard|prometheus-ui|inference-api" } | Stop-Job -ErrorAction SilentlyContinue | Remove-Job -ErrorAction SilentlyContinue
+Get-CimInstance Win32_Process -Filter "Name = 'kubectl.exe'" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like "*port-forward*" } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 
 # 1. ArgoCD Web UI (Port 8080)
-Start-Job -Name "argocd-ui" -ScriptBlock { kubectl port-forward svc/argocd-server -n argocd 8080:443 } | Out-Null
+Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command kubectl port-forward svc/argocd-server -n argocd 8080:443" -WindowStyle Hidden
 Write-Host "  [+] ArgoCD UI:          https://localhost:8080 (User: admin | Pass: YeqWrJWWSOfTNlqa)" -ForegroundColor Cyan
 
 # 2. PredScale Dashboard (Port 3000)
-Start-Job -Name "predscale-dashboard" -ScriptBlock { kubectl port-forward -n predscalens svc/dashboard-service 3000:80 } | Out-Null
+Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command kubectl port-forward -n predscalens svc/dashboard-service 3000:80" -WindowStyle Hidden
 Write-Host "  [+] PredScale Dashboard: http://localhost:3000" -ForegroundColor Cyan
 
 # 3. Prometheus Monitoring (Port 9090)
-Start-Job -Name "prometheus-ui" -ScriptBlock { kubectl port-forward -n monitoring svc/prometheus-operated 9090:9090 } | Out-Null
+Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command kubectl port-forward -n monitoring svc/prometheus-operated 9090:9090" -WindowStyle Hidden
 Write-Host "  [+] Prometheus UI:       http://localhost:9090" -ForegroundColor Cyan
 
 # 4. ML Inference API Docs (Port 8000)
-Start-Job -Name "inference-api" -ScriptBlock { kubectl port-forward -n predscalens svc/ml-inference-service 8000:8000 } | Out-Null
+Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command kubectl port-forward -n predscalens svc/ml-inference-service 8000:8000" -WindowStyle Hidden
 Write-Host "  [+] Inference API Docs:   http://localhost:8000/docs" -ForegroundColor Cyan
 
 # Give port-forwards 3 seconds to establish connections before opening browser tabs
