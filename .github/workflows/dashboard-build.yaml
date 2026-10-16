@@ -30,7 +30,10 @@ jobs:
       # SHA-pinned tag — ArgoCD can detect this changed in Git and redeploy
       - name: Set image tag
         id: tag
-        run: echo "tag=ghcr.io/${{ github.repository }}-dashboard:${{ github.sha }}" >> $GITHUB_OUTPUT
+        run: |
+          REPO=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "tag=ghcr.io/${REPO}-dashboard:${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "repo=${REPO}" >> $GITHUB_OUTPUT
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -44,7 +47,7 @@ jobs:
       # ArgoCD detects the commit, diffs the image field, and rolls out the new pod.
       - name: Update manifest image tag
         run: |
-          sed -i "s|ghcr.io/${{ github.repository }}-dashboard:.*|${{ steps.tag.outputs.tag }}|g" k8s-manifests/dashboard.yaml
+          sed -i "s|ghcr.io/${{ steps.tag.outputs.repo }}-dashboard:.*|${{ steps.tag.outputs.tag }}|g" k8s-manifests/dashboard.yaml
 
       - name: Commit and push updated manifest
         run: |

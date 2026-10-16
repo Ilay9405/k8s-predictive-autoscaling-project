@@ -34,7 +34,10 @@ jobs:
       # Mutable tags like :main never change from ArgoCD's perspective, so it never redeploys.
       - name: Set image tag
         id: tag
-        run: echo "tag=ghcr.io/${{ github.repository }}-inference:${{ github.sha }}" >> $GITHUB_OUTPUT
+        run: |
+          REPO=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "tag=ghcr.io/${REPO}-inference:${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "repo=${REPO}" >> $GITHUB_OUTPUT
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -49,7 +52,7 @@ jobs:
       # and trigger a rolling update on the inference deployment automatically.
       - name: Update manifest image tag
         run: |
-          sed -i "s|ghcr.io/${{ github.repository }}-inference:.*|${{ steps.tag.outputs.tag }}|g" k8s-manifests/predscale.yaml
+          sed -i "s|ghcr.io/${{ steps.tag.outputs.repo }}-inference:.*|${{ steps.tag.outputs.tag }}|g" k8s-manifests/predscale.yaml
 
       - name: Commit and push updated manifest
         run: |
