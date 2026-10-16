@@ -128,7 +128,7 @@ function DeploymentChart({ history, predictions, targetCores, currentReplicas, r
                         AI Prediction
                     </div>
                     <div className="legend-item">
-                        <span className="legend-line purple dotted"></span>
+                        <span className="legend-line dotted red"></span>
                         Capacity Limit
                     </div>
                 </div>
