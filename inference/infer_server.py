@@ -7,6 +7,7 @@ import os
 import time
 import threading
 import logging
+import numpy as np
 from datetime import datetime, timezone, timedelta
 
 # ── [LOGGING ADDITION START: Imports] ────────────────────────────────────────
@@ -131,7 +132,7 @@ def ensure_keda_scaledobject_exists(deployment_name, namespace):
 
 def prediction_loop():
     prom_client = PrometheusClient(PROMETHEUS_URL, NAMESPACE)
-    predictor = PodPredictor(lookback_steps=120, predict_steps=60)
+    predictor = PodPredictor(lookback_steps=180, predict_steps=60)
     # Track the last time we did a full model retrain, per deployment
     last_trained_at: dict[str, float] = {}
     
@@ -170,7 +171,7 @@ def prediction_loop():
                             "cpu": round(float(row["cpu"]), 4)
                         })
 
-                if df.empty or len(df) < 185:
+                if df.empty or len(df) < 245:  # 180 lookback + 60 predict + 5 buffer
                     # Not enough data yet — still send what we have so the UI can show progress
                     state["deployments"][deployment] = {
                         "cpu_request": cpu_request,
@@ -179,7 +180,7 @@ def prediction_loop():
                         "current_replicas": current_replicas,
                         "recommended_replicas": current_replicas,
                         "data_points": len(df),
-                        "required_points": 185,
+                        "required_points": 245,
                         "history": history[-200:],  # Last 200 points (~50 min at 15s intervals)
                         "predictions": [],
                     }
@@ -202,8 +203,13 @@ def prediction_loop():
 
                 predictions = predictor.predict(df)
                 if predictions is not None:
+                    # Use the PEAK predicted CPU in the next 5 minutes (20 steps × 15s)
+                    # rather than just predictions[0] (next 15 seconds).
+                    # This makes scaling proactive: if a spike is forecast in 4 minutes,
+                    # the system scales up NOW instead of reacting when the spike arrives.
+                    peak_predicted = float(np.max(predictions[:20]))
                     recommended = calculate_recommended_replicas(
-                        predictions[0], current_replicas, target_cpu_utilization=target_cores
+                        peak_predicted, current_replicas, target_cpu_utilization=target_cores
                     )
                     
                     # Use a stable label for Prometheus metrics

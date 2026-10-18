@@ -29,7 +29,7 @@ class PodPredictor:
     def __init__(self, lookback_steps: int = 120, predict_steps: int = 60):
         """
         Args:
-            lookback_steps: How much history to feed the model (120 steps = 30 mins).
+            lookback_steps: How much history to feed the model (180 steps = 45 mins = 3 full Locust cycles).
             predict_steps: How far into the future to predict (60 steps = 15 mins).
         """
         self.lookback_steps = lookback_steps
@@ -48,7 +48,7 @@ class PodPredictor:
             "bagging_freq": 5,
             "min_child_samples": 5,
             "verbosity": -1,
-            "n_estimators": 100, # Kept low for sub-second retraining
+            "n_estimators": 150, # Increased from 100 — better fit for periodic spike patterns
         }
 
     def train(self, df: pd.DataFrame) -> bool:
