@@ -51,7 +51,7 @@ spec:
       serviceAccountName: ml-inference-sa
       containers:
         - name: inference-server
-          image: ghcr.io/ilay9405/k8s-predictive-autoscaling-project-inference:main
+          image: ghcr.io/ilay9405/k8s-predictive-autoscaling-project-inference:126dda6fe5a377c9360251d1becb9e5bf73fdef9
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
