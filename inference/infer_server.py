@@ -160,7 +160,9 @@ def prediction_loop():
                 current_replicas = prom_client.get_replica_count(deployment)
 
                 # Fetch the aggregate deployment CPU (immune to ephemeral pod churn)
-                df = prom_client.fetch_deployment_cpu_series(deployment)
+                # Fetch 70 minutes (~280 pts at 15s) — must exceed the 245-point minimum
+                # (lookback=180 + predict=60 + buffer=5). Default 60min=240pts is too short.
+                df = prom_client.fetch_deployment_cpu_series(deployment, minutes=70)
                 
                 # Build historical CPU array for the frontend graph
                 history = []
