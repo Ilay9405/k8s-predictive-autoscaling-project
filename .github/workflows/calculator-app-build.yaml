@@ -6,6 +6,7 @@ on:
       - calculator-app-pod
     paths:
       - "calculator-app/**"
+      - ".github/workflows/calculator-app-build.yaml"
 
 jobs:
   build-and-push:
