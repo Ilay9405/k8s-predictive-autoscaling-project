@@ -1,0 +1,58 @@
+{{- if .Values.inference.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: predscale-inference
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: predscale-inference
+    {{- include "predscale.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.inference.replicaCount }}
+  selector:
+    matchLabels:
+      app: predscale-inference
+  template:
+    metadata:
+      labels:
+        app: predscale-inference
+    spec:
+      serviceAccountName: predscale-sa
+      containers:
+        - name: inference
+          image: "{{ .Values.inference.image.repository }}:{{ .Values.inference.image.tag }}"
+          imagePullPolicy: {{ .Values.inference.image.pullPolicy }}
+          ports:
+            - containerPort: 8000
+              name: http
+            - containerPort: 8001
+              name: metrics
+          env:
+            - name: PROMETHEUS_URL
+              value: {{ .Values.inference.env.prometheusUrl | quote }}
+            - name: TARGET_NAMESPACE
+              value: {{ .Values.inference.env.targetNamespace | quote }}
+            - name: POLL_INTERVAL
+              value: {{ .Values.inference.env.pollInterval | quote }}
+            - name: RETRAIN_INTERVAL_SECONDS
+              value: {{ .Values.inference.env.retrainIntervalSeconds | quote }}
+          livenessProbe:
+            httpGet:
+              path: /api/status
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /api/status
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: {{ .Values.inference.resources.requests.cpu | quote }}
+              memory: {{ .Values.inference.resources.requests.memory | quote }}
+            limits:
+              cpu: {{ .Values.inference.resources.limits.cpu | quote }}
+              memory: {{ .Values.inference.resources.limits.memory | quote }}
+{{- end }}

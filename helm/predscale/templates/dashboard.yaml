@@ -1,0 +1,59 @@
+{{- if .Values.dashboard.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: predscale-dashboard
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: predscale-dashboard
+    {{- include "predscale.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.dashboard.replicaCount }}
+  selector:
+    matchLabels:
+      app: predscale-dashboard
+  template:
+    metadata:
+      labels:
+        app: predscale-dashboard
+    spec:
+      containers:
+        - name: dashboard
+          image: "{{ .Values.dashboard.image.repository }}:{{ .Values.dashboard.image.tag }}"
+          imagePullPolicy: {{ .Values.dashboard.image.pullPolicy }}
+          ports:
+            - containerPort: 80
+              name: http
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: {{ .Values.dashboard.resources.requests.cpu | quote }}
+              memory: {{ .Values.dashboard.resources.requests.memory | quote }}
+            limits:
+              cpu: {{ .Values.dashboard.resources.limits.cpu | quote }}
+              memory: {{ .Values.dashboard.resources.limits.memory | quote }}
+{{- end }}
+---
+{{- if .Values.dashboard.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: dashboard-service
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "predscale.labels" . | nindent 4 }}
+spec:
+  type: NodePort
+  selector:
+    app: predscale-dashboard
+  ports:
+    - name: http
+      port: {{ .Values.dashboard.service.port }}
+      targetPort: 80
+      nodePort: {{ .Values.dashboard.service.nodePort }}
+{{- end }}

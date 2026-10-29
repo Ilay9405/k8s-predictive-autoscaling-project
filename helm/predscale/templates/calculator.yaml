@@ -1,0 +1,66 @@
+{{- if .Values.calculator.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: calculator-app
+  namespace: {{ .Values.calculator.namespace }}
+  labels:
+    app: calculator-app
+    {{- include "predscale.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.calculator.replicaCount }}
+  selector:
+    matchLabels:
+      app: calculator-app
+  template:
+    metadata:
+      labels:
+        app: calculator-app
+    spec:
+      containers:
+        - name: calculator-app
+          image: "{{ .Values.calculator.image.repository }}:{{ .Values.calculator.image.tag }}"
+          imagePullPolicy: {{ .Values.calculator.image.pullPolicy }}
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: PORT
+              value: "8080"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: {{ .Values.calculator.resources.requests.cpu | quote }}
+              memory: {{ .Values.calculator.resources.requests.memory | quote }}
+            limits:
+              cpu: {{ .Values.calculator.resources.limits.cpu | quote }}
+              memory: {{ .Values.calculator.resources.limits.memory | quote }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: calculator-app
+  namespace: {{ .Values.calculator.namespace }}
+  labels:
+    {{- include "predscale.labels" . | nindent 4 }}
+spec:
+  type: NodePort
+  selector:
+    app: calculator-app
+  ports:
+    - name: http
+      port: {{ .Values.calculator.service.port }}
+      targetPort: 8080
+      nodePort: {{ .Values.calculator.service.nodePort }}
+{{- end }}

@@ -1,0 +1,21 @@
+{{- if .Values.inference.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: ml-inference-service
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "predscale.labels" . | nindent 4 }}
+spec:
+  type: NodePort
+  selector:
+    app: predscale-inference
+  ports:
+    - name: http
+      port: {{ .Values.inference.service.port }}
+      targetPort: 8000
+      nodePort: {{ .Values.inference.service.nodePort }}
+    - name: metrics
+      port: 8001
+      targetPort: 8001
+{{- end }}

@@ -1,0 +1,91 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# values.yaml — Default configuration for the PredScale Helm chart.
+# Override any value with:  helm install predscale ./helm/predscale --set key=value
+# Or provide your own file: helm install predscale ./helm/predscale -f my-values.yaml
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Namespace where the inference server, dashboard, and locust run
+namespace: predscalens
+
+# ── Inference Server ──────────────────────────────────────────────────────────
+inference:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ghcr.io/ilay9405/k8s-predictive-autoscaling-project-inference
+    tag: main          # overridden by CI to the git SHA on every push
+    pullPolicy: Always
+  service:
+    port: 8000
+    nodePort: 30080
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+  env:
+    prometheusUrl: "http://prometheus-operated.monitoring.svc.cluster.local:9090"
+    targetNamespace: "default"
+    pollInterval: "15"
+    retrainIntervalSeconds: "300"
+
+# ── Dashboard ─────────────────────────────────────────────────────────────────
+dashboard:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ghcr.io/ilay9405/k8s-predictive-autoscaling-project-dashboard
+    tag: main
+    pullPolicy: Always
+  service:
+    port: 80
+    nodePort: 30081
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+    limits:
+      cpu: "200m"
+      memory: "128Mi"
+
+# ── Calculator App ────────────────────────────────────────────────────────────
+calculator:
+  enabled: true
+  namespace: default   # runs in default so PredScale discovers it
+  replicaCount: 1
+  image:
+    repository: ghcr.io/ilay9405/k8s-predictive-autoscaling-project-calculator-app
+    tag: main
+    pullPolicy: Always
+  service:
+    port: 8080
+    nodePort: 30082
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "128Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+
+# ── Stressor App ──────────────────────────────────────────────────────────────
+stressor:
+  enabled: true
+  namespace: default
+  replicaCount: 1
+  image:
+    repository: python
+    tag: "3.11-slim"
+    pullPolicy: IfNotPresent
+  service:
+    port: 8080
+    nodePort: 30083
+  resources:
+    requests:
+      cpu: "80m"
+      memory: "64Mi"
+    limits:
+      cpu: "500m"
+      memory: "128Mi"

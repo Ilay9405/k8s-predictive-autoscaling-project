@@ -1,0 +1,27 @@
+Thank you for installing {{ .Chart.Name }} v{{ .Chart.Version }}!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PredScale is deploying. Check status with:
+
+    kubectl get pods -n {{ .Values.namespace }}
+    kubectl get pods -n {{ .Values.calculator.namespace }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Access the services (port-forward or NodePort):
+
+  Dashboard:     http://localhost:3000
+    kubectl port-forward -n {{ .Values.namespace }} svc/dashboard-service 3000:80
+
+  Inference API: http://localhost:8000/docs
+    kubectl port-forward -n {{ .Values.namespace }} svc/ml-inference-service 8000:8000
+
+  Calculator:    http://localhost:8082
+    kubectl port-forward -n {{ .Values.calculator.namespace }} svc/calculator-app 8082:8080
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  To upgrade after changing values:
+    helm upgrade predscale ./helm/predscale
+
+  To uninstall:
+    helm uninstall predscale
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
