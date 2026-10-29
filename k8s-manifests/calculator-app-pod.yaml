@@ -8,7 +8,7 @@ metadata:
 spec:
   containers:
     - name: calculator-app
-      image: ghcr.io/ilay9405/k8s-predictive-autoscaling-project-calculator-app:3a1d48489cb4576a23a62a6658b2b6016832715e
+      image: ghcr.io/ilay9405/k8s-predictive-autoscaling-project-calculator-app:367e95a3d0e11aa3dac21ca05d3d16fba2ebcf44
       imagePullPolicy: Always
       command: ["sleep", "infinity"]   # keeps the pod alive so it shows up in the cluster
       resources:
