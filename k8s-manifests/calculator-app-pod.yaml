@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: calculator-app
+  namespace: default
+  labels:
+    app: calculator-app
+spec:
+  containers:
+    - name: calculator-app
+      image: ilayoh/calculator-app:19
+      imagePullPolicy: Always
