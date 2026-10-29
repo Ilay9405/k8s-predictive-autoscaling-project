@@ -8,5 +8,5 @@ metadata:
 spec:
   containers:
     - name: calculator-app
-      image: ilayoh/calculator-app:19
+      image: ghcr.io/ilay9405/k8s-predictive-autoscaling-project-calculator-app:3a1d48489cb4576a23a62a6658b2b6016832715e
       imagePullPolicy: Always
