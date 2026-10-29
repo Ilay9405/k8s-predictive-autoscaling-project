@@ -3,7 +3,7 @@ name: Build and Push Calculator App
 on:
   push:
     branches:
-      - calculator-app-pod
+      - main
     paths:
       - "calculator-app/**"
       - ".github/workflows/calculator-app-build.yaml"
