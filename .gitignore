@@ -61,3 +61,7 @@ frontend/.vite/
 .coverage.*
 .pytest_cache/
 htmlcov/
+
+# Java / Maven
+calculator-app/target/
+calculator-app/.vscode/
