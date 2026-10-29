@@ -1,12 +1,32 @@
-apiVersion: v1
-kind: Pod
+apiVersion: batch/v1
+kind: Job
 metadata:
   name: calculator-app
-  namespace: default
+  namespace: default # so that the autoscaling mechanism receives it as a subject app, and has it show up on the web UI
   labels:
     app: calculator-app
 spec:
-  containers:
-    - name: calculator-app
-      image: ghcr.io/ilay9405/k8s-predictive-autoscaling-project-calculator-app:3a1d48489cb4576a23a62a6658b2b6016832715e
-      imagePullPolicy: Always
+  ttlSecondsAfterFinished: 300   # auto-clean up 5 min after completion
+  template:
+    metadata:
+      labels:
+        app: calculator-app
+    spec:
+      restartPolicy: OnFailure
+      imagePullSecrets:
+        - name: ghcr-pull-secret   # kubectl create secret docker-registry ghcr-pull-secret \
+                                   #   --docker-server=ghcr.io \
+                                   #   --docker-username=<github-username> \
+                                   #   --docker-password=<github-pat> \
+                                   #   --namespace=default
+      containers:
+        - name: calculator-app
+          image: ghcr.io/ilay9405/k8s-predictive-autoscaling-project-calculator-app:3a1d48489cb4576a23a62a6658b2b6016832715e
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
