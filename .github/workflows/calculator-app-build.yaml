@@ -32,7 +32,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # Tag with both the exact git SHA (for ArgoCD immutability) and :latest
+      # both the exact git SHA for ArgoCD and :latest
       - name: Set image tag
         id: tag
         run: |
@@ -49,8 +49,7 @@ jobs:
             ${{ steps.tag.outputs.sha_tag }}
             ${{ steps.tag.outputs.latest_tag }}
 
-      # Keep the pod manifest pointing at the exact SHA so the cluster always
-      # pulls the right version and any change triggers a pod replacement.
+      # pulls the right version and any change triggers a pod replacement
       - name: Update pod manifest image tag
         run: |
           sed -i "s|image: .*calculator-app:.*|image: ${{ steps.tag.outputs.sha_tag }}|g" k8s-manifests/calculator-app-pod.yaml
