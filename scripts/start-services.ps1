@@ -22,6 +22,10 @@ Write-Host "  [+] Prometheus UI:       http://localhost:9090" -ForegroundColor C
 Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command kubectl port-forward -n predscalens svc/ml-inference-service 8000:8000" -WindowStyle Hidden
 Write-Host "  [+] Inference API Docs:   http://localhost:8000/docs" -ForegroundColor Cyan
 
+# 5. Calculator App (Port 8082)
+Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command kubectl port-forward -n default svc/calculator-app 8082:8080" -WindowStyle Hidden
+Write-Host "  [+] Calculator App:       http://localhost:8082" -ForegroundColor Cyan
+
 # Give port-forwards 3 seconds to establish connections before opening browser tabs
 Start-Sleep -Seconds 3
 
@@ -30,6 +34,7 @@ cmd.exe /c start https://localhost:8080
 cmd.exe /c start http://localhost:3000
 cmd.exe /c start http://localhost:9090
 cmd.exe /c start http://localhost:8000/docs
+cmd.exe /c start http://localhost:8082
 
 Write-Host "All background services are active!" -ForegroundColor Yellow
 Write-Host "To stop services later, run: .\scripts\stop-services.ps1" -ForegroundColor Yellow
