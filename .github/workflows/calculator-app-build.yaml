@@ -40,7 +40,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Pin the image tag to the exact git SHA so ArgoCD can detect real changes.
+      # Pin the image tag to the exact git gash so argo cd can detect real changes.
       - name: Set image tag
         id: tag
         run: |
@@ -55,7 +55,7 @@ jobs:
           push: true
           tags: ${{ steps.tag.outputs.tag }}
 
-      # Keep the pod manifest pointing at the exact SHA so any change triggers a pod replacement.
+      # Keep the pod manifest pointing at the exact hash so argo cd picks up on the change and updates the image.
       - name: Update pod manifest image tag
         run: |
           sed -i "s|image: .*calculator-app:.*|image: ${{ steps.tag.outputs.tag }}|g" k8s-manifests/calculator-app-pod.yaml
