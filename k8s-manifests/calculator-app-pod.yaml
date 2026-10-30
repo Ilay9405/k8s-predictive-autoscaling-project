@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: calculator-app
-          image: ghcr.io/ilay9405/k8s-predictive-autoscaling-project-calculator-app:dae9058cde4e7e55df47e552288fce9bd040d0e6
+          image: ghcr.io/ilay9405/k8s-predictive-autoscaling-project-calculator-app:12a831c32a2cbab6d4cd6c276628e338fe083391
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
