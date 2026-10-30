@@ -20,7 +20,7 @@ Thank you for installing {{ .Chart.Name }} v{{ .Chart.Version }}!
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   To upgrade after changing values:
-    helm upgrade predscale ./helm/predscale
+    helm upgrade predscale ./helm/predscalehelm
 
   To uninstall:
     helm uninstall predscale

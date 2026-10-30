@@ -46,6 +46,8 @@ spec:
             limits:
               cpu: {{ .Values.calculator.resources.limits.cpu | quote }}
               memory: {{ .Values.calculator.resources.limits.memory | quote }}
+
+              
 ---
 apiVersion: v1
 kind: Service

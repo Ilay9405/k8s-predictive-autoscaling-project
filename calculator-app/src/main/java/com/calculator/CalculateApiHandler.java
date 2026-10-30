@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+// Handler for the /calculate endpoint - accepts POST requests with form data
 public class CalculateApiHandler implements HttpHandler {
 
     private final Calculator calculator;
@@ -28,11 +29,12 @@ public class CalculateApiHandler implements HttpHandler {
             String op = params.getOrDefault("op", "").trim();
             double b = Double.parseDouble(params.getOrDefault("b", ""));
             double result = calculator.calculate(op, a, b);
+
             html = "<html><body><h2>Result: " + a + " " + op + " " + b + " = " + result + "</h2>" +
-                   "<a href=\"/\">Go back</a></body></html>";
+                    "<a href=\"/\">Go back</a></body></html>";
         } catch (Exception e) {
             html = "<html><body><h2>Error: " + e.getMessage() + "</h2>" +
-                   "<a href=\"/\">Go back</a></body></html>";
+                    "<a href=\"/\">Go back</a></body></html>";
         }
 
         byte[] bytes = html.getBytes(StandardCharsets.UTF_8);
@@ -44,6 +46,7 @@ public class CalculateApiHandler implements HttpHandler {
     }
 
     private Map<String, String> parseForm(String body) {
+
         Map<String, String> result = new HashMap<>();
         for (String pair : body.split("&")) {
             String[] kv = pair.split("=", 2);
